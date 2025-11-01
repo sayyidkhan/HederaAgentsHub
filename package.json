@@ -9,7 +9,9 @@
     "test": "node --test dist/tests/**/*.test.js",
     "test:watch": "ts-node --watch",
     "clean": "rm -rf dist",
-    "start": "node dist/server/index.js"
+    "start": "node dist/server/index.js",
+    "deploy:env": "node deploy-env.js",
+    "deploy": "npm run build && railway up"
   },
   "keywords": [
     "hedera",
