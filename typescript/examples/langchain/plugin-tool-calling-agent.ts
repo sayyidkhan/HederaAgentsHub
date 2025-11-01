@@ -13,6 +13,8 @@ import {
   HederaLangchainToolkit,
 } from 'hedera-agent-kit';
 import { ChatOpenAI } from '@langchain/openai';
+import { ChatGroq } from '@langchain/groq';
+
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { AgentExecutor, createToolCallingAgent } from 'langchain/agents';
 import { BufferMemory } from 'langchain/memory';
@@ -24,9 +26,12 @@ dotenv.config();
 
 async function bootstrap(): Promise<void> {
   // Initialise OpenAI LLM
-  const llm = new ChatOpenAI({
-    model: 'gpt-4o-mini',
-  });
+
+  const llm = new ChatGroq({ model: 'llama-3.3-70b-versatile' });
+  
+  // const llm = new ChatOpenAI({
+  //   model: 'gpt-4o-mini',
+  // });
 
   // Hedera client setup (Testnet by default)
   const client = Client.forTestnet().setOperator(

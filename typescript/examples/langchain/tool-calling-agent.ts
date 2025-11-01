@@ -1,5 +1,6 @@
 import { AgentMode, HederaLangchainToolkit } from 'hedera-agent-kit';
 import { ChatOpenAI } from '@langchain/openai';
+import { ChatGroq } from '@langchain/groq';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { AgentExecutor, createToolCallingAgent } from 'langchain/agents';
 import { BufferMemory } from 'langchain/memory';
@@ -11,9 +12,12 @@ dotenv.config();
 
 async function bootstrap(): Promise<void> {
   // Initialise OpenAI LLM
-  const llm = new ChatOpenAI({
-    model: 'gpt-4o-mini',
-  });
+  // Option 3: Groq (requires GROQ_API_KEY in .env)
+  const llm = new ChatGroq({ model: 'llama-3.3-70b-versatile' });
+
+  // const llm = new ChatOpenAI({
+  //   model: 'gpt-4o-mini',
+  // });
 
   // Hedera client setup (Testnet by default)
   const client = Client.forTestnet().setOperator(
@@ -65,7 +69,7 @@ async function bootstrap(): Promise<void> {
     agent,
     tools,
     memory,
-    returnIntermediateSteps: false,
+    returnIntermediateSteps: true,
   });
 
   console.log('Hedera Agent CLI Chatbot — type "exit" to quit');
