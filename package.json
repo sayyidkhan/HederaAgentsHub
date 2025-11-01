@@ -1,0 +1,48 @@
+{
+  "name": "hedera-agents-hub",
+  "version": "0.1.0",
+  "description": "Agent-first Digital Economy using ERC-8004 and x402 on Hedera testnet",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node",
+    "test": "node --test dist/tests/**/*.test.js",
+    "test:watch": "ts-node --watch",
+    "clean": "rm -rf dist",
+    "start": "node dist/server/index.js",
+    "kill:3000": "lsof -ti:3000 | xargs kill -9",
+    "restart": "npm run kill:3000 && npm run build && npm run start",
+    "deploy:env": "node deploy-env.js",
+    "deploy": "npm run build && railway up"
+  },
+  "keywords": [
+    "hedera",
+    "erc-8004",
+    "x402",
+    "agents",
+    "blockchain",
+    "payments"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@hashgraph/sdk": "^2.64.5",
+    "commander": "^11.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.10.0",
+    "express": "^5.1.0",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.6",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/yamljs": "^0.2.34",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

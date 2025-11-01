@@ -1,0 +1,193 @@
+openapi: 3.0.0
+info:
+  title: HederaAgentsHub API
+  description: Create agents and wallets on the fly on Hedera blockchain
+  version: 1.0.0
+  contact:
+    name: Nasrulhaq Khan
+    email: your-email@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://your-app.up.railway.app
+    description: Production server (Railway)
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Agents
+    description: Agent creation on Hedera blockchain
+
+paths:
+  /:
+    get:
+      summary: Get API information
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: HederaAgentsHub API
+                  version:
+                    type: string
+                    example: 1.0.0
+                  endpoints:
+                    type: object
+
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2025-11-01T06:00:00.000Z'
+
+  /api/agents/create:
+    post:
+      summary: Create a new agent on Hedera blockchain
+      tags:
+        - Hedera Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HederaAgentCreation'
+      responses:
+        '200':
+          description: Agent created successfully on blockchain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HederaAgentResponse'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+components:
+  schemas:
+    HederaAgentCreation:
+      type: object
+      required:
+        - name
+        - purpose
+        - capabilities
+        - walletAddress
+        - accountId
+        - privateKey
+      properties:
+        name:
+          type: string
+          example: iPhone Shopping Assistant
+          description: Agent name
+        purpose:
+          type: string
+          example: You are an intelligent shopping assistant...
+          description: Agent purpose (system prompt)
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: ['product-search', 'price-comparison', 'payment-processing']
+          description: Agent capabilities
+        walletAddress:
+          type: string
+          example: '0.0.7174687'
+          description: Hedera wallet address (ONE AGENT PER WALLET)
+        accountId:
+          type: string
+          example: '0.0.7174687'
+          description: Hedera account ID for agent creation
+        privateKey:
+          type: string
+          example: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e877de76ec94275b4'
+          description: Hedera private key for agent creation
+        metadata:
+          type: object
+          example:
+            version: '1.0.0'
+            model: 'gpt-4'
+            temperature: 0.7
+          description: Optional metadata
+
+    HederaAgentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        agentId:
+          type: string
+          example: agent-iphone-shopping-assistant-1761990620227-hqa6d
+        name:
+          type: string
+          example: iPhone Shopping Assistant
+        purpose:
+          type: string
+          example: You are an intelligent shopping assistant...
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: ['product-search', 'price-comparison']
+        walletAddress:
+          type: string
+          example: '0.0.7174687'
+        evmAddress:
+          type: string
+          example: '0x98d46dda75A216f94bF9784a6665A4E3821Da3D9'
+          description: EVM address for wallet access
+        privateKey:
+          type: string
+          example: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e...'
+          description: Private key for wallet operations
+        topicId:
+          type: string
+          example: '0.0.7178279'
+          description: Hedera Topic ID where agent is stored
+        transactionId:
+          type: string
+          example: '0.0.7174687@1761990615.794170000'
+          description: Blockchain transaction ID
+        error:
+          type: string
+          description: Error message if creation failed
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Error message
+          description: Error description
