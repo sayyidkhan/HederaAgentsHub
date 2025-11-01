@@ -5,7 +5,6 @@
  */
 
 import { HederaAgentRegistry, AgentDefinition } from '../core/erc8004/hedera-agent-registry';
-import { hederaConfig } from '../core/config/index';
 import { ethers } from 'ethers';
 
 export interface CreateAgentRequest {
@@ -13,6 +12,8 @@ export interface CreateAgentRequest {
   purpose: string;
   capabilities: string[];
   walletAddress: string;
+  accountId: string;           // ← Hedera account ID
+  privateKey: string;          // ← Hedera private key
   metadata?: {
     version?: string;
     model?: string;
@@ -36,25 +37,33 @@ export interface CreateAgentResponse {
   error?: string;
 }
 
+// Shared registry instances (per account)
+const registries = new Map<string, HederaAgentRegistry>();
+
+/**
+ * Get or initialize shared registry for account
+ */
+async function getSharedRegistry(accountId: string, privateKey: string): Promise<HederaAgentRegistry> {
+  if (!registries.has(accountId)) {
+    const registry = new HederaAgentRegistry(accountId, privateKey);
+    await registry.initialize();
+    registries.set(accountId, registry);
+  }
+  return registries.get(accountId)!;
+}
+
 /**
  * Create a new agent on Hedera blockchain
  */
 export async function createAgent(request: CreateAgentRequest): Promise<CreateAgentResponse> {
-  let registry: HederaAgentRegistry | null = null;
-
   try {
     console.log(`\n📝 Creating Agent via API\n`);
     console.log(`   Name: ${request.name}`);
     console.log(`   Wallet: ${request.walletAddress}`);
     console.log(`   Capabilities: ${request.capabilities.join(', ')}\n`);
 
-    // Initialize registry
-    registry = new HederaAgentRegistry(
-      hederaConfig.accountId,
-      hederaConfig.privateKey
-    );
-
-    await registry.initialize();
+    // Get shared registry for this account (reuse existing topic)
+    const registry = await getSharedRegistry(request.accountId, request.privateKey);
 
     // Create agent definition
     const agentDefinition: AgentDefinition = {
@@ -69,7 +78,7 @@ export async function createAgent(request: CreateAgentRequest): Promise<CreateAg
     const registeredAgent = await registry.registerAgent(agentDefinition);
 
     // Get EVM address from private key
-    const wallet = new ethers.Wallet(hederaConfig.privateKey);
+    const wallet = new ethers.Wallet(request.privateKey);
     const evmAddress = wallet.address;
 
     console.log(`✅ Agent created successfully!\n`);
@@ -84,7 +93,7 @@ export async function createAgent(request: CreateAgentRequest): Promise<CreateAg
       capabilities: registeredAgent.capabilities, // ← Agent capabilities
       walletAddress: registeredAgent.walletAddress,
       evmAddress: evmAddress,                   // ← EVM address for wallet access
-      privateKey: hederaConfig.privateKey,      // ← Private key for wallet access
+      privateKey: request.privateKey,           // ← Private key for wallet access
       topicId: registeredAgent.topicId,
       transactionId: registeredAgent.transactionId,
     };
@@ -95,10 +104,6 @@ export async function createAgent(request: CreateAgentRequest): Promise<CreateAg
       success: false,
       error: error.message,
     };
-  } finally {
-    if (registry) {
-      registry.close();
-    }
   }
 }
 

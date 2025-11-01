@@ -13,23 +13,32 @@ export interface GetAgentResponse {
   error?: string;
 }
 
+// Shared registry instance to avoid creating new topics
+let sharedRegistry: HederaAgentRegistry | null = null;
+
+/**
+ * Get or initialize shared registry
+ */
+async function getSharedRegistry(): Promise<HederaAgentRegistry> {
+  if (!sharedRegistry) {
+    sharedRegistry = new HederaAgentRegistry(
+      hederaConfig.accountId,
+      hederaConfig.privateKey
+    );
+    await sharedRegistry.initialize();
+  }
+  return sharedRegistry;
+}
+
 /**
  * Get agent by ID
  */
 export async function getAgentById(agentId: string): Promise<GetAgentResponse> {
-  let registry: HederaAgentRegistry | null = null;
-
   try {
     console.log(`\n🔍 Retrieving Agent by ID\n`);
     console.log(`   Agent ID: ${agentId}\n`);
 
-    registry = new HederaAgentRegistry(
-      hederaConfig.accountId,
-      hederaConfig.privateKey
-    );
-
-    await registry.initialize();
-
+    const registry = await getSharedRegistry();
     const agent = registry.getAgent(agentId);
 
     if (!agent) {
@@ -54,10 +63,6 @@ export async function getAgentById(agentId: string): Promise<GetAgentResponse> {
       success: false,
       error: error.message,
     };
-  } finally {
-    if (registry) {
-      registry.close();
-    }
   }
 }
 
@@ -65,19 +70,11 @@ export async function getAgentById(agentId: string): Promise<GetAgentResponse> {
  * Get agent by wallet address (ONE AGENT PER WALLET)
  */
 export async function getAgentByWallet(walletAddress: string): Promise<GetAgentResponse> {
-  let registry: HederaAgentRegistry | null = null;
-
   try {
     console.log(`\n🔍 Retrieving Agent by Wallet\n`);
     console.log(`   Wallet: ${walletAddress}\n`);
 
-    registry = new HederaAgentRegistry(
-      hederaConfig.accountId,
-      hederaConfig.privateKey
-    );
-
-    await registry.initialize();
-
+    const registry = await getSharedRegistry();
     const agent = registry.getAgentByWallet(walletAddress);
 
     if (!agent) {
@@ -102,10 +99,6 @@ export async function getAgentByWallet(walletAddress: string): Promise<GetAgentR
       success: false,
       error: error.message,
     };
-  } finally {
-    if (registry) {
-      registry.close();
-    }
   }
 }
 

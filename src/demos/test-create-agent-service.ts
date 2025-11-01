@@ -33,6 +33,8 @@ Always test thoroughly.`,
         'test-capability-3'
       ],
       walletAddress: hederaConfig.accountId,
+      accountId: hederaConfig.accountId,
+      privateKey: hederaConfig.privateKey,
       metadata: {
         version: '1.0.0',
         model: 'gpt-4',

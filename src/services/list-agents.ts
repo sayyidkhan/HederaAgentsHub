@@ -22,22 +22,31 @@ export interface SearchAgentsResponse {
   error?: string;
 }
 
+// Shared registry instance to avoid creating new topics
+let sharedRegistry: HederaAgentRegistry | null = null;
+
+/**
+ * Get or initialize shared registry
+ */
+async function getSharedRegistry(): Promise<HederaAgentRegistry> {
+  if (!sharedRegistry) {
+    sharedRegistry = new HederaAgentRegistry(
+      hederaConfig.accountId,
+      hederaConfig.privateKey
+    );
+    await sharedRegistry.initialize();
+  }
+  return sharedRegistry;
+}
+
 /**
  * List all registered agents
  */
 export async function listAllAgents(): Promise<ListAgentsResponse> {
-  let registry: HederaAgentRegistry | null = null;
-
   try {
     console.log(`\n📋 Listing All Agents\n`);
 
-    registry = new HederaAgentRegistry(
-      hederaConfig.accountId,
-      hederaConfig.privateKey
-    );
-
-    await registry.initialize();
-
+    const registry = await getSharedRegistry();
     const agents = registry.getAllAgents();
 
     console.log(`✅ Found ${agents.length} agent(s)\n`);
@@ -60,10 +69,6 @@ export async function listAllAgents(): Promise<ListAgentsResponse> {
       success: false,
       error: error.message,
     };
-  } finally {
-    if (registry) {
-      registry.close();
-    }
   }
 }
 
@@ -71,19 +76,11 @@ export async function listAllAgents(): Promise<ListAgentsResponse> {
  * Search agents by capability
  */
 export async function searchAgentsByCapability(capability: string): Promise<SearchAgentsResponse> {
-  let registry: HederaAgentRegistry | null = null;
-
   try {
     console.log(`\n🔍 Searching Agents by Capability\n`);
     console.log(`   Capability: ${capability}\n`);
 
-    registry = new HederaAgentRegistry(
-      hederaConfig.accountId,
-      hederaConfig.privateKey
-    );
-
-    await registry.initialize();
-
+    const registry = await getSharedRegistry();
     const agents = registry.searchByCapability(capability);
 
     console.log(`✅ Found ${agents.length} agent(s) with capability '${capability}'\n`);
@@ -107,10 +104,6 @@ export async function searchAgentsByCapability(capability: string): Promise<Sear
       success: false,
       error: error.message,
     };
-  } finally {
-    if (registry) {
-      registry.close();
-    }
   }
 }
 
