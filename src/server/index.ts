@@ -12,6 +12,15 @@ import path from 'path';
 import { ethers } from 'ethers';
 import { hederaConfig } from '../core/config/index';
 
+// Import Agent Services (Hedera Blockchain)
+import {
+  createAgent,
+  getAgentById,
+  getAgentByWallet,
+  listAllAgents,
+  searchAgentsByCapability as searchAgentsByCapabilityService,
+} from '../services';
+
 // Import ERC-8004 functions
 import {
   registerAgent,
@@ -80,6 +89,117 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// HEDERA AGENT ENDPOINTS (Blockchain)
+// ============================================================================
+
+/**
+ * POST /api/agents/create
+ * Create a new agent on Hedera blockchain
+ */
+app.post('/api/agents/create', async (req: Request, res: Response) => {
+  try {
+    const { name, purpose, capabilities, walletAddress, metadata } = req.body;
+
+    if (!name || !purpose || !capabilities || !walletAddress) {
+      return res.status(400).json({
+        error: 'Missing required fields: name, purpose, capabilities, walletAddress',
+      });
+    }
+
+    const response = await createAgent({
+      name,
+      purpose,
+      capabilities,
+      walletAddress,
+      metadata,
+    });
+
+    if (!response.success) {
+      return res.status(400).json({ error: response.error });
+    }
+
+    res.json(response);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/agents/:agentId
+ * Get agent by ID
+ */
+app.get('/api/agents/:agentId', async (req: Request, res: Response) => {
+  try {
+    const { agentId } = req.params;
+    const response = await getAgentById(agentId);
+
+    if (!response.success) {
+      return res.status(404).json({ error: response.error });
+    }
+
+    res.json(response);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/agents/wallet/:walletAddress
+ * Get agent by wallet address
+ */
+app.get('/api/agents/wallet/:walletAddress', async (req: Request, res: Response) => {
+  try {
+    const { walletAddress } = req.params;
+    const response = await getAgentByWallet(walletAddress);
+
+    if (!response.success) {
+      return res.status(404).json({ error: response.error });
+    }
+
+    res.json(response);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/agents
+ * List all agents
+ */
+app.get('/api/agents', async (req: Request, res: Response) => {
+  try {
+    const response = await listAllAgents();
+
+    if (!response.success) {
+      return res.status(500).json({ error: response.error });
+    }
+
+    res.json(response);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/agents/search/:capability
+ * Search agents by capability
+ */
+app.get('/api/agents/search/:capability', async (req: Request, res: Response) => {
+  try {
+    const { capability } = req.params;
+    const response = await searchAgentsByCapabilityService(capability);
+
+    if (!response.success) {
+      return res.status(500).json({ error: response.error });
+    }
+
+    res.json(response);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
 // IDENTITY ENDPOINTS
 // ============================================================================
 
@@ -89,7 +209,7 @@ app.get('/health', (req: Request, res: Response) => {
  */
 app.post('/api/agent/register', async (req: Request, res: Response) => {
   try {
-    const { name, description, capabilities, serviceUrl, price, currency } = req.body;
+    const { name, description, capabilities } = req.body;
 
     if (!name || !description || !capabilities) {
       return res.status(400).json({
@@ -101,9 +221,9 @@ app.post('/api/agent/register', async (req: Request, res: Response) => {
       name,
       description,
       capabilities,
-      serviceUrl: serviceUrl || '',
-      price: price || 0,
-      currency: currency || 'USDC',
+      serviceUrl: '',
+      price: 0,
+      currency: 'USDC',
     });
 
     res.json({

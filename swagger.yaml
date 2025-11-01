@@ -19,6 +19,8 @@ servers:
 tags:
   - name: Health
     description: Health check endpoints
+  - name: Hedera Agents
+    description: Agent creation and management on Hedera blockchain
   - name: Identity
     description: Agent registration and discovery (ERC-8004)
   - name: Reputation
@@ -72,6 +74,128 @@ paths:
                     type: string
                     format: date-time
                     example: '2025-11-01T06:00:00.000Z'
+
+  /api/agents/create:
+    post:
+      summary: Create a new agent on Hedera blockchain
+      tags:
+        - Hedera Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HederaAgentCreation'
+      responses:
+        '200':
+          description: Agent created successfully on blockchain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HederaAgentResponse'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/agents:
+    get:
+      summary: List all agents on Hedera blockchain
+      tags:
+        - Hedera Agents
+      responses:
+        '200':
+          description: List of all agents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  agents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HederaAgent'
+                  total:
+                    type: integer
+
+  /api/agents/{agentId}:
+    get:
+      summary: Get agent by ID from Hedera blockchain
+      tags:
+        - Hedera Agents
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HederaAgentResponse'
+        '404':
+          description: Agent not found
+
+  /api/agents/wallet/{walletAddress}:
+    get:
+      summary: Get agent by wallet address (ONE AGENT PER WALLET)
+      tags:
+        - Hedera Agents
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Hedera wallet address
+      responses:
+        '200':
+          description: Agent for wallet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HederaAgentResponse'
+        '404':
+          description: No agent found for wallet
+
+  /api/agents/search/{capability}:
+    get:
+      summary: Search agents by capability on Hedera blockchain
+      tags:
+        - Hedera Agents
+      parameters:
+        - name: capability
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Capability to search for
+      responses:
+        '200':
+          description: Agents with capability
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  agents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HederaAgent'
+                  capability:
+                    type: string
+                  total:
+                    type: integer
 
   /api/agent/register:
     post:
@@ -521,6 +645,113 @@ paths:
 
 components:
   schemas:
+    HederaAgentCreation:
+      type: object
+      required:
+        - name
+        - purpose
+        - capabilities
+        - walletAddress
+      properties:
+        name:
+          type: string
+          example: iPhone Shopping Assistant
+          description: Agent name
+        purpose:
+          type: string
+          example: You are an intelligent shopping assistant...
+          description: Agent purpose (system prompt)
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: ['product-search', 'price-comparison', 'payment-processing']
+          description: Agent capabilities
+        walletAddress:
+          type: string
+          example: '0.0.7174687'
+          description: Hedera wallet address (ONE AGENT PER WALLET)
+        metadata:
+          type: object
+          example:
+            version: '1.0.0'
+            model: 'gpt-4'
+            temperature: 0.7
+          description: Optional metadata
+
+    HederaAgentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        agentId:
+          type: string
+          example: agent-iphone-shopping-assistant-1761990620227-hqa6d
+        name:
+          type: string
+          example: iPhone Shopping Assistant
+        purpose:
+          type: string
+          example: You are an intelligent shopping assistant...
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: ['product-search', 'price-comparison']
+        walletAddress:
+          type: string
+          example: '0.0.7174687'
+        evmAddress:
+          type: string
+          example: '0x98d46dda75A216f94bF9784a6665A4E3821Da3D9'
+          description: EVM address for wallet access
+        privateKey:
+          type: string
+          example: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e...'
+          description: Private key for wallet operations
+        topicId:
+          type: string
+          example: '0.0.7178279'
+          description: Hedera Topic ID where agent is stored
+        transactionId:
+          type: string
+          example: '0.0.7174687@1761990615.794170000'
+          description: Blockchain transaction ID
+        error:
+          type: string
+          description: Error message if creation failed
+
+    HederaAgent:
+      type: object
+      properties:
+        agentId:
+          type: string
+          example: agent-iphone-shopping-assistant-1761990620227-hqa6d
+        name:
+          type: string
+          example: iPhone Shopping Assistant
+        purpose:
+          type: string
+          example: You are an intelligent shopping assistant...
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: ['product-search', 'price-comparison']
+        walletAddress:
+          type: string
+          example: '0.0.7174687'
+        topicId:
+          type: string
+          example: '0.0.7178279'
+        transactionId:
+          type: string
+          example: '0.0.7174687@1761990615.794170000'
+        createdAt:
+          type: number
+          example: 1761990620227
+
     AgentRegistration:
       type: object
       required:
@@ -542,19 +773,6 @@ components:
             type: string
           example: ['weather', 'forecast', 'alerts']
           description: Agent capabilities
-        serviceUrl:
-          type: string
-          example: http://localhost:3001
-          description: Service endpoint URL
-        price:
-          type: number
-          format: float
-          example: 0.01
-          description: Service price
-        currency:
-          type: string
-          example: USDC
-          description: Price currency
 
     AgentMetadata:
       type: object
@@ -570,16 +788,6 @@ components:
           items:
             type: string
           example: ['weather', 'forecast', 'alerts']
-        serviceUrl:
-          type: string
-          example: http://localhost:3001
-        price:
-          type: number
-          format: float
-          example: 0.01
-        currency:
-          type: string
-          example: USDC
 
     FeedbackSubmission:
       type: object
