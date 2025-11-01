@@ -10,8 +10,8 @@
     "test:watch": "ts-node --watch",
     "clean": "rm -rf dist",
     "start": "node dist/server/index.js",
-    "kill:3000": "lsof -ti:3000 | xargs kill -9",
-    "restart": "npm run kill:3000 && npm run build && npm run start",
+    "kill:8080": "lsof -ti:8080 | xargs kill -9",
+    "restart": "npm run kill:8080 && npm run build && npm run start",
     "deploy:env": "node deploy-env.js",
     "deploy": "npm run build && railway up"
   },

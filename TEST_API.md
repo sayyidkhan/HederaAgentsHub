@@ -11,9 +11,9 @@ npm run start
 You should see:
 ```
 🚀 HederaAgentsHub API Server
-📡 Listening on port 3000
-🌐 URL: http://localhost:3000
-📚 Swagger UI: http://localhost:3000/api-docs
+📡 Listening on port 8080
+🌐 URL: http://localhost:8080
+📚 Swagger UI: http://localhost:8080/api-docs
 ✅ Server ready to accept requests!
 ```
 
@@ -21,7 +21,7 @@ You should see:
 
 #### Option 1: Using cURL
 ```bash
-curl -X POST http://localhost:3000/api/agents/create \
+curl -X POST http://localhost:8080/api/agents/create \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Test Agent",
@@ -43,7 +43,7 @@ npm run dev src/demos/test-api-endpoint.ts
 ```
 
 #### Option 3: Using Swagger UI
-1. Open: http://localhost:3000/api-docs
+1. Open: http://localhost:8080/api-docs
 2. Click on `POST /api/agents/create`
 3. Click "Try it out"
 4. Fill in the request body with:

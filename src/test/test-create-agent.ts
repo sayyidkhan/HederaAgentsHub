@@ -15,7 +15,7 @@ async function testCreateAgentEndpoint() {
     // Check if server is running
     console.log('\n🔍 Checking if server is running...\n');
     try {
-      const healthCheck = await fetch('http://localhost:3000/health');
+      const healthCheck = await fetch('http://localhost:8080/health');
       if (!healthCheck.ok) {
         console.log('❌ Server is not responding correctly');
         console.log('Please start the server first: npm run start');
@@ -23,7 +23,7 @@ async function testCreateAgentEndpoint() {
       }
       console.log('✅ Server is running!\n');
     } catch (error) {
-      console.log('❌ Cannot connect to server at http://localhost:3000');
+      console.log('❌ Cannot connect to server at http://localhost:8080');
       console.log('Please start the server first: npm run start');
       return;
     }
@@ -52,12 +52,12 @@ Always test thoroughly.`,
       ]
     };
 
-    console.log('📤 Sending POST request to http://localhost:3000/api/agents/create\n');
+    console.log('📤 Sending POST request to http://localhost:8080/api/agents/create\n');
     console.log('Request Body:');
     console.log(JSON.stringify(requestBody, null, 2));
     console.log('\n');
 
-    const response = await fetch('http://localhost:3000/api/agents/create', {
+    const response = await fetch('http://localhost:8080/api/agents/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

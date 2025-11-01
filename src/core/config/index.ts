@@ -14,6 +14,9 @@ export const hederaConfig: HederaConfig = {
   chainId: parseInt(process.env.CHAIN_ID || "296"),
 };
 
+// Agent Registry Topic ID (optional - if set, reuses existing topic instead of creating new one)
+export const agentRegistryTopicId = process.env.AGENT_REGISTRY_TOPIC_ID || null;
+
 export const contractAddresses = {
   identityRegistry: process.env.IDENTITY_REGISTRY || "",
   reputationRegistry: process.env.REPUTATION_REGISTRY || "",

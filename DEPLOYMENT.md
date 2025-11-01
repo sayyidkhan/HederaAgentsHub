@@ -162,7 +162,7 @@ Use dashboard instead of CLI:
 
 ### Port Issues
 Railway uses `PORT` env variable (auto-set).
-Server listens on `process.env.PORT || 3000`.
+Server listens on `process.env.PORT || 8080`.
 
 ---
 

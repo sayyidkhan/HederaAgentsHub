@@ -6,3 +6,4 @@
 export { createAgent, CreateAgentRequest, CreateAgentResponse } from './create-agent';
 export { getAgentById, getAgentByWallet, GetAgentResponse } from './get-agent';
 export { listAllAgents, searchAgentsByCapability, ListAgentsResponse, SearchAgentsResponse } from './list-agents';
+export { getAgentMetadata, GetAgentMetadataRequest, GetAgentMetadataResponse, AgentMetadata } from './get-agent-metadata';

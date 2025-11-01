@@ -11,7 +11,7 @@ import {
   AccountId,
   PrivateKey,
 } from '@hashgraph/sdk';
-import { hederaConfig } from '../config/index';
+import { hederaConfig, agentRegistryTopicId } from '../config/index';
 
 export interface AgentDefinition {
   name: string;
@@ -38,6 +38,9 @@ export interface RegisteredAgent {
   transactionId: string;
   metadata?: any;
   createdAt: number;
+  // Blockchain verification URLs
+  topicUrl?: string; // HashScan URL for the topic
+  transactionUrl?: string; // HashScan URL for the transaction
 }
 
 export interface AgentUpdate {
@@ -76,11 +79,19 @@ export class HederaAgentRegistry {
   }
 
   /**
-   * Initialize registry by creating a topic for agent registrations
+   * Initialize registry by creating or reusing a topic for agent registrations
    */
   async initialize(): Promise<string> {
     try {
       console.log(`🚀 Initializing Agent Registry on Hedera...\n`);
+
+      // Check if we should reuse an existing topic
+      if (agentRegistryTopicId) {
+        this.registryTopicId = TopicId.fromString(agentRegistryTopicId);
+        console.log(`✅ Reusing Existing Registry Topic`);
+        console.log(`   Topic ID: ${this.registryTopicId}\n`);
+        return this.registryTopicId.toString();
+      }
 
       // Create a new topic for agent registry
       const transaction = new TopicCreateTransaction()
@@ -95,7 +106,8 @@ export class HederaAgentRegistry {
 
       console.log(`✅ Registry Topic Created`);
       console.log(`   Topic ID: ${this.registryTopicId}`);
-      console.log(`   Transaction ID: ${txResponse.transactionId}\n`);
+      console.log(`   Transaction ID: ${txResponse.transactionId}`);
+      console.log(`   Set AGENT_REGISTRY_TOPIC_ID=${this.registryTopicId} to reuse this topic\n`);
 
       return this.registryTopicId.toString();
 
@@ -122,10 +134,8 @@ export class HederaAgentRegistry {
         await this.initialize();
       }
 
-      // Check if wallet already has an agent (ONE AGENT PER WALLET)
-      const existingAgent = Array.from(this.agents.values()).find(
-        agent => agent.walletAddress === definition.walletAddress
-      );
+      // Check if wallet already has an agent (ONE AGENT PER WALLET) - check blockchain
+      const existingAgent = await this.getAgentByWallet(definition.walletAddress);
 
       if (existingAgent) {
         throw new Error(
@@ -163,6 +173,11 @@ export class HederaAgentRegistry {
       console.log(`   Transaction ID: ${submitResponse.transactionId}`);
       console.log(`   Status: ${submitReceipt.status}\n`);
 
+      // Generate blockchain verification URLs
+      const topicId = this.registryTopicId!.toString();
+      const transactionId = submitResponse.transactionId.toString();
+      const urls = this.generateBlockchainUrls(topicId, transactionId);
+
       // Create registered agent record
       const registeredAgent: RegisteredAgent = {
         agentId,
@@ -170,11 +185,13 @@ export class HederaAgentRegistry {
         purpose: definition.purpose,
         capabilities: definition.capabilities,
         walletAddress: definition.walletAddress,
-        topicId: this.registryTopicId!.toString(),
+        topicId: topicId,
         consensusTimestamp: submitReceipt.status.toString(),
-        transactionId: submitResponse.transactionId.toString(),
+        transactionId: transactionId,
         metadata: definition.metadata,
         createdAt: Date.now(),
+        topicUrl: urls.topicUrl,
+        transactionUrl: urls.transactionUrl,
       };
 
       // Store in local cache
@@ -182,8 +199,9 @@ export class HederaAgentRegistry {
 
       console.log(`✅ Agent Registration Complete`);
       console.log(`   Agent ID: ${agentId}`);
-      console.log(`   Topic ID: ${this.registryTopicId}`);
-      console.log(`   Blockchain TX: ${submitResponse.transactionId}\n`);
+      console.log(`   Topic ID: ${topicId}`);
+      console.log(`   Blockchain TX: ${transactionId}`);
+      console.log(`   View on HashScan: ${urls.topicUrl}\n`);
 
       return registeredAgent;
 
@@ -250,19 +268,209 @@ export class HederaAgentRegistry {
   }
 
   /**
-   * Get agent by ID
+   * Generate HashScan URLs for blockchain verification
    */
-  getAgent(agentId: string): RegisteredAgent | undefined {
-    return this.agents.get(agentId);
+  private generateBlockchainUrls(topicId: string, transactionId: string): { topicUrl: string; transactionUrl: string } {
+    const network = hederaConfig.network === 'mainnet' ? 'mainnet' : 'testnet';
+    return {
+      topicUrl: `https://hashscan.io/${network}/topic/${topicId}`,
+      transactionUrl: `https://hashscan.io/${network}/transaction/${transactionId}`,
+    };
   }
 
   /**
-   * Get agent by wallet address (ONE AGENT PER WALLET)
+   * Get all topics created by this account
    */
-  getAgentByWallet(walletAddress: string): RegisteredAgent | undefined {
-    return Array.from(this.agents.values()).find(
-      agent => agent.walletAddress.toLowerCase() === walletAddress.toLowerCase()
-    );
+  private async getAllAccountTopics(): Promise<string[]> {
+    try {
+      const topics: string[] = [];
+      
+      // Get all transactions for this account
+      const transactionsUrl = `${hederaConfig.mirrorNodeUrl}/transactions?account.id=${this.operatorId}&transactiontype=CONSENSUSCREATETOPIC&order=desc&limit=100`;
+      const response = await fetch(transactionsUrl);
+      
+      if (!response.ok) {
+        console.error(`Failed to fetch transactions: ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json() as any;
+      
+      // Extract topic IDs from transactions
+      for (const tx of data.transactions || []) {
+        if (tx.entity_id) {
+          topics.push(tx.entity_id);
+        }
+      }
+
+      return topics;
+    } catch (error: any) {
+      console.error(`Error fetching account topics:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Search for agent in a specific topic
+   */
+  private async searchAgentInTopic(topicId: string, agentId: string): Promise<RegisteredAgent | undefined> {
+    try {
+      const mirrorNodeUrl = `${hederaConfig.mirrorNodeUrl}/topics/${topicId}/messages`;
+      const response = await fetch(mirrorNodeUrl);
+      
+      if (!response.ok) {
+        return undefined;
+      }
+
+      const data = await response.json() as any;
+      
+      // Parse messages and find the agent
+      for (const msg of data.messages || []) {
+        try {
+          const messageContent = Buffer.from(msg.message, 'base64').toString('utf-8');
+          const agentData = JSON.parse(messageContent);
+          
+          if (agentData.type === 'AGENT_REGISTRATION' && agentData.agentId === agentId) {
+            const transactionId = msg.payer_account_id + '@' + msg.consensus_timestamp;
+            const urls = this.generateBlockchainUrls(topicId, transactionId);
+            
+            return {
+              agentId: agentData.agentId,
+              name: agentData.name,
+              purpose: agentData.purpose,
+              capabilities: agentData.capabilities,
+              walletAddress: agentData.walletAddress,
+              topicId: topicId,
+              consensusTimestamp: msg.consensus_timestamp,
+              transactionId: transactionId,
+              metadata: agentData.metadata,
+              createdAt: agentData.timestamp,
+              topicUrl: urls.topicUrl,
+              transactionUrl: urls.transactionUrl,
+            };
+          }
+        } catch (parseError) {
+          continue;
+        }
+      }
+
+      return undefined;
+    } catch (error: any) {
+      return undefined;
+    }
+  }
+
+  /**
+   * Get agent by ID - searches across all topics created by this account
+   */
+  async getAgent(agentId: string): Promise<RegisteredAgent | undefined> {
+    try {
+      // First, try the current registry topic if set
+      if (this.registryTopicId) {
+        const agent = await this.searchAgentInTopic(this.registryTopicId.toString(), agentId);
+        if (agent) {
+          return agent;
+        }
+      }
+
+      // If not found, search all topics created by this account
+      console.log(`🔍 Agent not found in current topic, searching all account topics...`);
+      const allTopics = await this.getAllAccountTopics();
+      
+      for (const topicId of allTopics) {
+        const agent = await this.searchAgentInTopic(topicId, agentId);
+        if (agent) {
+          console.log(`✅ Agent found in topic ${topicId}`);
+          return agent;
+        }
+      }
+
+      return undefined;
+    } catch (error: any) {
+      console.error(`Error fetching agent from blockchain:`, error.message);
+      return undefined;
+    }
+  }
+
+  /**
+   * Search for agent by wallet in a specific topic
+   */
+  private async searchAgentByWalletInTopic(topicId: string, walletAddress: string): Promise<RegisteredAgent | undefined> {
+    try {
+      const mirrorNodeUrl = `${hederaConfig.mirrorNodeUrl}/topics/${topicId}/messages`;
+      const response = await fetch(mirrorNodeUrl);
+      
+      if (!response.ok) {
+        return undefined;
+      }
+
+      const data = await response.json() as any;
+      
+      // Parse messages and find the agent by wallet
+      for (const msg of data.messages || []) {
+        try {
+          const messageContent = Buffer.from(msg.message, 'base64').toString('utf-8');
+          const agentData = JSON.parse(messageContent);
+          
+          if (agentData.type === 'AGENT_REGISTRATION' && 
+              agentData.walletAddress.toLowerCase() === walletAddress.toLowerCase()) {
+            const transactionId = msg.payer_account_id + '@' + msg.consensus_timestamp;
+            const urls = this.generateBlockchainUrls(topicId, transactionId);
+            
+            return {
+              agentId: agentData.agentId,
+              name: agentData.name,
+              purpose: agentData.purpose,
+              capabilities: agentData.capabilities,
+              walletAddress: agentData.walletAddress,
+              topicId: topicId,
+              consensusTimestamp: msg.consensus_timestamp,
+              transactionId: transactionId,
+              metadata: agentData.metadata,
+              createdAt: agentData.timestamp,
+              topicUrl: urls.topicUrl,
+              transactionUrl: urls.transactionUrl,
+            };
+          }
+        } catch (parseError) {
+          continue;
+        }
+      }
+
+      return undefined;
+    } catch (error: any) {
+      return undefined;
+    }
+  }
+
+  /**
+   * Get agent by wallet address (ONE AGENT PER WALLET) - searches across all topics
+   */
+  async getAgentByWallet(walletAddress: string): Promise<RegisteredAgent | undefined> {
+    try {
+      // First, try the current registry topic if set
+      if (this.registryTopicId) {
+        const agent = await this.searchAgentByWalletInTopic(this.registryTopicId.toString(), walletAddress);
+        if (agent) {
+          return agent;
+        }
+      }
+
+      // If not found, search all topics created by this account
+      const allTopics = await this.getAllAccountTopics();
+      
+      for (const topicId of allTopics) {
+        const agent = await this.searchAgentByWalletInTopic(topicId, walletAddress);
+        if (agent) {
+          return agent;
+        }
+      }
+
+      return undefined;
+    } catch (error: any) {
+      console.error(`Error fetching agent from blockchain:`, error.message);
+      return undefined;
+    }
   }
 
   /**

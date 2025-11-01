@@ -4,8 +4,9 @@
  * Usage: await createAgent(request)
  */
 
-import { HederaAgentRegistry, AgentDefinition } from '../core/erc8004/hedera-agent-registry';
+import { AgentDefinition } from '../core/erc8004/hedera-agent-registry';
 import { hederaConfig } from '../core/config/index';
+import { getSharedRegistry } from './shared-registry';
 import { ethers } from 'ethers';
 
 export interface CreateAgentRequest {
@@ -26,21 +27,6 @@ export interface CreateAgentResponse {
   topicId?: string;
   transactionId?: string;
   error?: string;
-}
-
-// Shared registry instances (per account)
-const registries = new Map<string, HederaAgentRegistry>();
-
-/**
- * Get or initialize shared registry for account
- */
-async function getSharedRegistry(accountId: string, privateKey: string): Promise<HederaAgentRegistry> {
-  if (!registries.has(accountId)) {
-    const registry = new HederaAgentRegistry(accountId, privateKey);
-    await registry.initialize();
-    registries.set(accountId, registry);
-  }
-  return registries.get(accountId)!;
 }
 
 /**

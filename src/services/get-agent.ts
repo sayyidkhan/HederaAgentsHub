@@ -4,30 +4,14 @@
  * Usage: await getAgentById(agentId) or await getAgentByWallet(walletAddress)
  */
 
-import { HederaAgentRegistry, RegisteredAgent } from '../core/erc8004/hedera-agent-registry';
+import { RegisteredAgent } from '../core/erc8004/hedera-agent-registry';
 import { hederaConfig } from '../core/config/index';
+import { getSharedRegistry } from './shared-registry';
 
 export interface GetAgentResponse {
   success: boolean;
   agent?: RegisteredAgent;
   error?: string;
-}
-
-// Shared registry instance to avoid creating new topics
-let sharedRegistry: HederaAgentRegistry | null = null;
-
-/**
- * Get or initialize shared registry
- */
-async function getSharedRegistry(): Promise<HederaAgentRegistry> {
-  if (!sharedRegistry) {
-    sharedRegistry = new HederaAgentRegistry(
-      hederaConfig.accountId,
-      hederaConfig.privateKey
-    );
-    await sharedRegistry.initialize();
-  }
-  return sharedRegistry;
 }
 
 /**
@@ -38,8 +22,8 @@ export async function getAgentById(agentId: string): Promise<GetAgentResponse> {
     console.log(`\n🔍 Retrieving Agent by ID\n`);
     console.log(`   Agent ID: ${agentId}\n`);
 
-    const registry = await getSharedRegistry();
-    const agent = registry.getAgent(agentId);
+    const registry = await getSharedRegistry(hederaConfig.accountId, hederaConfig.privateKey);
+    const agent = await registry.getAgent(agentId);
 
     if (!agent) {
       return {
@@ -74,8 +58,8 @@ export async function getAgentByWallet(walletAddress: string): Promise<GetAgentR
     console.log(`\n🔍 Retrieving Agent by Wallet\n`);
     console.log(`   Wallet: ${walletAddress}\n`);
 
-    const registry = await getSharedRegistry();
-    const agent = registry.getAgentByWallet(walletAddress);
+    const registry = await getSharedRegistry(hederaConfig.accountId, hederaConfig.privateKey);
+    const agent = await registry.getAgentByWallet(walletAddress);
 
     if (!agent) {
       return {

@@ -85,7 +85,7 @@ Always be helpful, accurate, and prioritize customer satisfaction. Use the ERC-8
     // ========================================================================
     console.log('✅ STEP 4: Verify Registration\n');
 
-    const agent = registry.getAgent(registeredAgent.agentId);
+    const agent = await registry.getAgent(registeredAgent.agentId);
 
     if (agent) {
       console.log(`✅ Agent successfully registered on Hedera!\n`);

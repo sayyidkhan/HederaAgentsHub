@@ -11,15 +11,15 @@ import YAML from 'yamljs';
 import path from 'path';
 
 // Import Agent Services
-import { createAgent } from '../services';
+import { createAgent, getAgentMetadata } from '../services';
 
 // Initialize Express
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Load Swagger documentation
 const swaggerDocument = YAML.load(path.join(__dirname, '../../swagger.yaml'));
@@ -45,6 +45,7 @@ app.get('/', (req: Request, res: Response) => {
       health: 'GET /health',
       swagger: 'GET /api-docs',
       createAgent: 'POST /api/agents/create',
+      getAgentMetadata: 'POST /api/agents/metadata',
     },
   });
 });
@@ -86,6 +87,46 @@ app.post('/api/agents/create', async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// GET AGENT METADATA ENDPOINT
+// ============================================================================
+
+/**
+ * POST /api/agents/metadata
+ * Get metadata for multiple agents by their IDs
+ * Request: { agentIds: ["agent-id-1", "agent-id-2"] }
+ */
+app.post('/api/agents/metadata', async (req: Request, res: Response) => {
+  try {
+    console.log('\n📋 Metadata Request Received');
+    console.log(`   Body:`, JSON.stringify(req.body, null, 2));
+
+    const { agentIds } = req.body;
+
+    if (!agentIds || !Array.isArray(agentIds) || agentIds.length === 0) {
+      return res.status(400).json({
+        error: 'Missing required field: agentIds (array of agent IDs)',
+      });
+    }
+
+    console.log(`   Agent IDs: ${agentIds.length}`);
+    agentIds.forEach((id, idx) => console.log(`     [${idx}] ${id}`));
+
+    const response = await getAgentMetadata({
+      agentIds,
+    });
+
+    if (!response.success) {
+      return res.status(400).json({ error: response.error });
+    }
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('❌ Metadata endpoint error:', error);
     res.status(500).json({ error: error.message });
   }
 });
