@@ -4,6 +4,8 @@
 
 A working prototype of an agentic system using ERC-8004 for trustless agent discovery and x402 for secure on-chain payments on Hedera testnet.
 
+🚀 Backend: https://hederahub-production.up.railway.app
+
 ---
 
 ## 🎯 Product Vision
