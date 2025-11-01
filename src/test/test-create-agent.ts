@@ -33,13 +33,7 @@ async function testCreateAgentEndpoint() {
     // ========================================================================
     console.log('\n📝 TEST: Creating Agent via API\n');
 
-    // Generate a new wallet for this test run
-    const newWallet = ethersLib.Wallet.createRandom();
     const timestamp = Date.now();
-
-    console.log(`📌 Generated New Wallet for This Run:`);
-    console.log(`   Private Key: ${newWallet.privateKey}`);
-    console.log(`   Address: ${newWallet.address}\n`);
 
     const requestBody = {
       name: `Test API Agent ${timestamp}`,
@@ -55,17 +49,7 @@ Always test thoroughly.`,
         'api-test-1',
         'api-test-2',
         'api-test-3'
-      ],
-      walletAddress: newWallet.address,  // ← Use generated wallet address
-      accountId: hederaConfig.accountId,
-      privateKey: hederaConfig.privateKey,
-      metadata: {
-        version: '1.0.0',
-        model: 'gpt-4',
-        temperature: 0.7,
-        maxTokens: 2000,
-        testMode: true,
-      }
+      ]
     };
 
     console.log('📤 Sending POST request to http://localhost:3000/api/agents/create\n');

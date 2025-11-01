@@ -81,6 +81,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/HederaAgentCreation'
+            example:
+              name: iPhone Shopping Assistant
+              purpose: You are an intelligent shopping assistant specialized in helping customers find and purchase iPhones
+              capabilities:
+                - product-search
+                - price-comparison
+                - payment-processing
       responses:
         '200':
           description: Agent created successfully on blockchain
@@ -88,6 +95,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HederaAgentResponse'
+              example:
+                success: true
+                agentId: agent-iphone-shopping-assistant-1761997309047-r6fiwu
+                name: iPhone Shopping Assistant
+                purpose: You are an intelligent shopping assistant...
+                capabilities:
+                  - product-search
+                  - price-comparison
+                  - payment-processing
+                walletAddress: '0x0433332a80ddce5efc4b14F18eca85d88c7B71a4'
+                evmAddress: '0x98d46dda75A216f94bF9784a6665A4E3821Da3D9'
+                privateKey: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e877de76ec94275b4'
+                topicId: '0.0.7179327'
+                transactionId: '0.0.7174687@1761997304.777519358'
         '400':
           description: Bad request - missing required fields
           content:
