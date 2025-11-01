@@ -5,8 +5,8 @@
  */
 
 import { ethers } from "ethers";
-import { hederaConfig } from "./config/index";
-import { AgentMetadata, Feedback, ReputationScore } from "./types/index";
+import { hederaConfig } from "../core/config/index";
+import { AgentMetadata, Feedback, ReputationScore } from "../core/types/index";
 
 // ============================================================================
 // DEMO: Real Agent System Implementation

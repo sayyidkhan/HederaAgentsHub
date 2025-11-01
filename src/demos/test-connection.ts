@@ -3,8 +3,8 @@
  * Run with: npm run dev src/test-connection.ts
  */
 
-import { getHederaClient, closeHederaClient, getAccountBalance, formatHbar } from "./hedera/client";
-import { hederaConfig, contractAddresses, validateConfig } from "./config/index";
+import { getHederaClient, closeHederaClient, getAccountBalance, formatHbar } from "../core/hedera/client";
+import { hederaConfig, contractAddresses, validateConfig } from "../core/config/index";
 
 async function testConnection() {
   console.log("🧪 Testing HederaAgentsHub Setup...\n");

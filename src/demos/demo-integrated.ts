@@ -5,8 +5,8 @@
  */
 
 import { ethers } from "ethers";
-import { hederaConfig } from "./config/index";
-import { AgentMetadata } from "./types/index";
+import { hederaConfig } from "../core/config/index";
+import { AgentMetadata } from "../core/types/index";
 
 // Import ACTUAL implementations
 import {
@@ -15,7 +15,7 @@ import {
   getAgentOwner,
   getAgentCount,
   searchAgentsByCapability,
-} from "./erc8004/identity";
+} from "../core/erc8004/identity";
 
 import {
   submitFeedback,
@@ -23,7 +23,7 @@ import {
   getReputationSummary,
   calculateTrustScore,
   isTrustworthy,
-} from "./erc8004/reputation";
+} from "../core/erc8004/reputation";
 
 import {
   requestValidation,
@@ -31,7 +31,7 @@ import {
   getValidationScore,
   calculateValidationConfidence,
   isValidated,
-} from "./erc8004/validation";
+} from "../core/erc8004/validation";
 
 async function runIntegratedDemo() {
   console.log("🎯 ERC-8004 Integrated Demo - Using ACTUAL Implementations\n");

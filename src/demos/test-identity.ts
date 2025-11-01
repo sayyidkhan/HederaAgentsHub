@@ -6,9 +6,9 @@
 import {
   getAgentCount,
   agentExists,
-} from "./erc8004/identity";
-import { hederaConfig } from "./config/index";
-import { AgentMetadata } from "./types/index";
+} from "../core/erc8004/identity";
+import { hederaConfig } from "../core/config/index";
+import { AgentMetadata } from "../core/types/index";
 import { ethers } from "ethers";
 
 async function testIdentityManager() {

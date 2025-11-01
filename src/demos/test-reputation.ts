@@ -6,8 +6,8 @@
 import {
   calculateTrustScore,
   isTrustworthy,
-} from "./erc8004/reputation";
-import { hederaConfig } from "./config/index";
+} from "../core/erc8004/reputation";
+import { hederaConfig } from "../core/config/index";
 
 async function testReputationManager() {
   console.log("🧪 Testing ERC-8004 ReputationManager...\n");

@@ -8,7 +8,7 @@ import {
   isValidValidationType,
   calculateValidationConfidence,
   isValidated,
-} from "./erc8004/validation";
+} from "../core/erc8004/validation";
 
 async function testValidationManager() {
   console.log("🧪 Testing ERC-8004 ValidationManager...\n");
