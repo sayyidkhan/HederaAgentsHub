@@ -16,6 +16,9 @@ import {
 } from './mockDb';
 import { Listing, User, Order, Invoice, Transaction, Agent } from './types';
 
+// API Configuration
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 // Simulate network latency
 const LATENCY = 300;
 
@@ -198,7 +201,7 @@ export async function createAgent(agentData: {
   purpose: string;
   capabilities: string[];
 }): Promise<Agent> {
-  const response = await fetch('https://hederahub-production.up.railway.app/api/agents/create', {
+  const response = await fetch(`${API_URL}/api/agents/create`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

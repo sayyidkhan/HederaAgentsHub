@@ -69,8 +69,8 @@ npm run dev src/server/index.ts
 ```
 
 **Access:**
-- API: `http://localhost:3000`
-- Swagger UI: `http://localhost:3000/api-docs`
+- API: `http://localhost:8080`
+- Swagger UI: `http://localhost:8080/api-docs`
 
 ---
 
@@ -213,8 +213,8 @@ import { WeatherAgent } from '../agents';
 npm run dev src/server/index.ts
 
 # Access:
-# http://localhost:3000
-# http://localhost:3000/api-docs (Swagger)
+# http://localhost:8080
+# http://localhost:8080/api-docs (Swagger)
 ```
 
 ### 2. Run Agent Demo

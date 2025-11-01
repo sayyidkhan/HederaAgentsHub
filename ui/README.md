@@ -18,11 +18,17 @@
 # Install dependencies
 pnpm install
 
+# Configure API endpoint (optional)
+# Create .env.local file with:
+# NEXT_PUBLIC_API_URL=http://localhost:8080
+
 # Run development server
 pnpm dev
 
 # Open http://localhost:3000
 ```
+
+**Note:** The UI will connect to `http://localhost:8080` by default for the agent creation API. Make sure your backend server is running on port 8080.
 
 ## 📁 Structure
 
