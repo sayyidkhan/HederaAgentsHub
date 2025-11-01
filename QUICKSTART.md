@@ -1,138 +1,158 @@
 # 🚀 Quick Start Guide
 
-Get HederaAgentsHub running locally in 5 minutes.
+Get HederaAgentsHub running in 5 minutes.
+
+---
 
 ## Prerequisites
 
 - Node.js 18+
-- npm or pnpm
-- Your Hedera testnet credentials (Account ID + Private Key)
+- Hedera testnet account
 
-## Setup Steps
+---
 
-### 1. Install Dependencies
+## 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-This installs:
-- `@hashgraph/sdk` - Hedera blockchain SDK
-- `ethers` - Ethereum/EVM interactions
-- `dotenv` - Environment variable management
-- `commander` - CLI framework
-- TypeScript and dev tools
+---
 
-### 2. Configure Environment
+## 2. Configure Environment
 
-Copy the example file and add your credentials:
+Create `.env` file:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your Hedera account details:
+Edit `.env` with your Hedera credentials:
 
 ```env
-HEDERA_ACCOUNT_ID="0.0.7174687"
-HEDERA_PRIVATE_KEY="0xab9c734f98648d32634d96e9a1629fe06f676eb7..."
+HEDERA_ACCOUNT_ID="0.0.YOUR_ACCOUNT_ID"
+HEDERA_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"
+HEDERA_NETWORK="testnet"
 ```
 
-**Get these from:** https://portal.hedera.com/dashboard
+---
 
-### 3. Test Connection
-
-Run the connection test to verify everything works:
+## 3. Test Connection
 
 ```bash
 npm run dev src/test-connection.ts
 ```
 
-You should see:
+Expected output:
 ```
 ✅ Configuration valid
 ✅ Hedera client initialized
-💰 HBAR Balance: 1000 HBAR
-✅ All tests passed! You're ready to build.
+✅ Balance query successful
+✅ All contract addresses configured
 ```
 
-### 4. Build TypeScript
+---
+
+## 4. Run Demo
+
+```bash
+npm run dev src/demo-integrated.ts
+```
+
+This demonstrates:
+- ✅ Agent registration
+- ✅ Feedback submission
+- ✅ Trust score calculation
+- ✅ Validation requests
+- ✅ Confidence scoring
+
+---
+
+## 5. Test Individual Components
+
+### Test Identity Manager
+```bash
+npm run dev src/test-identity.ts
+```
+
+### Test Reputation Manager
+```bash
+npm run dev src/test-reputation.ts
+```
+
+### Test Validation Manager
+```bash
+npm run dev src/test-validation.ts
+```
+
+---
+
+## 6. Build for Production
 
 ```bash
 npm run build
 ```
 
-This compiles TypeScript to JavaScript in the `dist/` folder.
+---
 
-## Project Structure
+## 🎯 What's Next?
 
-```
-src/
-├── config/           # Configuration management
-├── hedera/           # Hedera SDK utilities
-├── types/            # TypeScript type definitions
-├── erc8004/          # ERC-8004 integration (coming soon)
-├── x402/             # x402 payment integration (coming soon)
-├── agents/           # Agent implementations (coming soon)
-└── cli/              # CLI commands (coming soon)
-```
+- Build agents using the framework
+- Integrate x402 payments
+- Create custom demos
 
-## Available Commands
+---
 
+## 🐛 Troubleshooting
+
+### Connection fails
+- Check internet connection
+- Verify Hedera account is active
+- Ensure private key is correct
+
+### Build errors
 ```bash
-# Development
-npm run dev src/test-connection.ts    # Test connection
-npm run build                          # Build TypeScript
-npm run clean                          # Clean build artifacts
-
-# Testing (when tests are added)
-npm run test                           # Run tests
+npm run clean
+npm install
+npm run build
 ```
 
-## Next Steps
-
-1. ✅ **Connection verified** - You can now interact with Hedera
-2. 📝 **Build ERC-8004 SDK** - Implement agent registry interactions
-3. 💳 **Add x402 Payments** - Implement payment flows
-4. 🤖 **Create Agents** - Build your first agent service
-5. 🛠️ **CLI Tool** - Add command-line interface
-
-## Troubleshooting
-
-### Missing environment variables
+### Missing .env
+```bash
+cp .env.example .env
+# Edit .env with your credentials
 ```
-⚠️  Missing environment variables: HEDERA_ACCOUNT_ID, HEDERA_PRIVATE_KEY
-```
-**Solution:** Make sure `.env` file exists and has your credentials.
 
-### Module not found errors
-```
-Cannot find module '@hashgraph/sdk'
-```
-**Solution:** Run `npm install` again.
+---
 
-### Connection failed
-```
-❌ Connection test failed
-```
-**Solution:** 
-- Verify your Account ID and Private Key are correct
-- Check that your account has HBAR balance (should have 1000 from faucet)
-- Ensure you're using the testnet network
+## 📚 Available Commands
 
-## Resources
+| Command | Description |
+|---------|-------------|
+| `npm install` | Install dependencies |
+| `npm run build` | Compile TypeScript |
+| `npm run dev <file>` | Run TypeScript file |
+| `npm run clean` | Clean build artifacts |
 
-- **Hedera Portal:** https://portal.hedera.com/
-- **Hedera Docs:** https://docs.hedera.com/
-- **HashScan Explorer:** https://hashscan.io/testnet/
-- **ERC-8004 Spec:** https://eips.ethereum.org/EIPS/eip-8004
+---
 
-## Next Phase: Building ERC-8004 Integration
+## 🔗 Useful Links
 
-Once you've verified the connection, we'll build:
+- **Get Hedera Account:** https://portal.hedera.com
+- **Get Testnet HBAR:** https://portal.hedera.com (1000 HBAR free)
+- **Hedera Explorer:** https://hashscan.io/testnet/
+- **x402 Facilitator:** https://x402-hedera-production.up.railway.app/
 
-1. **IdentityManager** - Register and query agents
-2. **ReputationManager** - Submit and fetch feedback
-3. **ValidationManager** - Request validations
+---
 
-See `README.md` for full architecture details.
+## ✅ Quick Checklist
+
+- [ ] Node.js 18+ installed
+- [ ] Dependencies installed (`npm install`)
+- [ ] `.env` file configured
+- [ ] Connection test passed
+- [ ] Demo runs successfully
+
+---
+
+That's it! You're ready to build agents. 🚀
