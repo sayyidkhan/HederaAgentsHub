@@ -30,6 +30,10 @@ export const x402Config = {
     "https://x402-hedera-production.up.railway.app",
 };
 
+export const supabaseConfig = {
+  databaseUrl: process.env.DATABASE_URL || "",
+};
+
 export function validateConfig(): boolean {
   const required = [
     "HEDERA_ACCOUNT_ID",
