@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AuthGuard } from '@/lib/auth-guard';
 import { createAgent } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -22,9 +23,27 @@ export default function CreateAgentPage() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
+    purpose: '',
     type: 'buyer' as Agent['type'],
   });
+  const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
+
+  const availableCapabilities = [
+    { id: 'price-comparison', label: 'Price Comparison', description: 'Compare prices across listings' },
+    { id: 'payment-processing', label: 'Payment Processing', description: 'Handle automated payments' },
+    { id: 'inventory-management', label: 'Inventory Management', description: 'Track and manage inventory' },
+    { id: 'trust-verification', label: 'Trust Verification', description: 'Verify transaction trustworthiness' },
+    { id: 'negotiation', label: 'Negotiation', description: 'Automated price negotiation' },
+    { id: 'quality-check', label: 'Quality Check', description: 'Validate product quality' },
+  ];
+
+  const handleCapabilityToggle = (capabilityId: string) => {
+    setSelectedCapabilities(prev => 
+      prev.includes(capabilityId)
+        ? prev.filter(id => id !== capabilityId)
+        : [...prev, capabilityId]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,17 +51,17 @@ export default function CreateAgentPage() {
 
     setLoading(true);
     try {
-      // In production, use actual user.id from Supabase
       const newAgent = await createAgent({
-        ...formData,
-        userId: 'user-1',
+        name: formData.name,
+        purpose: formData.purpose,
+        capabilities: selectedCapabilities,
       });
       
       router.push('/');
       router.refresh();
     } catch (error) {
       console.error('Failed to create agent:', error);
-      alert('Failed to create agent. Please try again.');
+      alert(`Failed to create agent: ${error instanceof Error ? error.message : 'Please try again.'}`);
     } finally {
       setLoading(false);
     }
@@ -82,7 +101,7 @@ export default function CreateAgentPage() {
                   <Label htmlFor="name">Agent Name *</Label>
                   <Input
                     id="name"
-                    placeholder="e.g., Electronics Buyer Agent"
+                    placeholder="e.g., iPhone Shopping Assistant"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
@@ -126,20 +145,54 @@ export default function CreateAgentPage() {
                   </Select>
                 </div>
 
-                {/* Description */}
+                {/* Purpose */}
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description *</Label>
+                  <Label htmlFor="purpose">Purpose *</Label>
                   <Textarea
-                    id="description"
-                    placeholder="Describe what your agent does and its key features..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    id="purpose"
+                    placeholder="e.g., You are an intelligent shopping assistant specialized in helping customers find and purchase iPhones"
+                    value={formData.purpose}
+                    onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
                     required
                     rows={4}
                     className="border-primary/20 resize-none"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Provide a detailed description of your agent's purpose and capabilities
+                    Describe your agent's purpose and what it specializes in
+                  </p>
+                </div>
+
+                {/* Capabilities */}
+                <div className="space-y-3">
+                  <Label>Capabilities *</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {availableCapabilities.map((capability) => (
+                      <div
+                        key={capability.id}
+                        className="flex items-start space-x-3 p-3 border border-primary/20 rounded-lg hover:bg-accent/50 transition-colors"
+                      >
+                        <Checkbox
+                          id={capability.id}
+                          checked={selectedCapabilities.includes(capability.id)}
+                          onCheckedChange={() => handleCapabilityToggle(capability.id)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <label
+                            htmlFor={capability.id}
+                            className="text-sm font-medium leading-none cursor-pointer"
+                          >
+                            {capability.label}
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {capability.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select at least one capability for your agent
                   </p>
                 </div>
 
@@ -170,13 +223,13 @@ export default function CreateAgentPage() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={loading || !formData.name || !formData.description}
+                    disabled={loading || !formData.name || !formData.purpose || selectedCapabilities.length === 0}
                     className="flex-1 gap-2"
                   >
                     {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Creating...
+                        Creating Agent on Hedera...
                       </>
                     ) : (
                       <>

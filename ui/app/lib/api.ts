@@ -193,28 +193,55 @@ export async function getMyAgents(userId: string): Promise<Agent[]> {
   return getAgentsByUserId(userId);
 }
 
-export async function createAgent(agentData: Partial<Agent>): Promise<Agent> {
-  await sleep(LATENCY);
+export async function createAgent(agentData: {
+  name: string;
+  purpose: string;
+  capabilities: string[];
+}): Promise<Agent> {
+  const response = await fetch('https://hederahub-production.up.railway.app/api/agents/create', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: agentData.name,
+      purpose: agentData.purpose,
+      capabilities: agentData.capabilities,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create agent: ${response.statusText}`);
+  }
+
+  const result = await response.json();
   
+  // Map the API response to our Agent type
   const newAgent: Agent = {
-    id: `agent-${Date.now()}`,
-    name: agentData.name || 'New Agent',
-    description: agentData.description || '',
-    type: agentData.type || 'buyer',
-    userId: agentData.userId || 'user-1',
-    evmAddress: agentData.evmAddress || `0x${Math.random().toString(16).substring(2, 42)}`,
-    did: agentData.did || `did:hedera:testnet:z6Mk${Math.random().toString(36).substring(2, 42)}`,
+    id: result.agentId || `agent-${Date.now()}`,
+    name: agentData.name,
+    description: agentData.purpose,
+    type: 'buyer', // Default type, can be adjusted based on capabilities
+    userId: 'user-1', // TODO: Use actual user ID
+    evmAddress: result.evmAddress || '',
+    did: result.did || '',
     reputationScore: 0,
-    capabilities: agentData.capabilities || [],
+    capabilities: agentData.capabilities.map((cap, idx) => ({
+      id: `cap-${idx}`,
+      name: cap,
+      description: cap,
+      category: 'general',
+      enabled: true,
+    })),
     verified: false,
-    avatar: agentData.avatar,
-    status: 'pending',
+    status: 'active',
     createdAt: new Date(),
     updatedAt: new Date(),
     totalTransactions: 0,
     successRate: 0,
   };
   
+  // Also add to mock DB for UI consistency
   addAgent(newAgent);
   return newAgent;
 }
