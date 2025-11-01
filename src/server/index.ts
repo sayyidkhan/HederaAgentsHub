@@ -60,14 +60,17 @@ app.get('/health', (req: Request, res: Response) => {
 /**
  * POST /api/agents/create
  * Create a new agent on Hedera blockchain with wallet
+ * Required: name, purpose, capabilities
+ * Everything else is generated dynamically
  */
 app.post('/api/agents/create', async (req: Request, res: Response) => {
   try {
-    const { name, purpose, capabilities, walletAddress, accountId, privateKey, metadata } = req.body;
+    const { name, purpose, capabilities } = req.body;
 
-    if (!name || !purpose || !capabilities || !walletAddress || !accountId || !privateKey) {
+    // Only require: name, purpose, capabilities
+    if (!name || !purpose || !capabilities) {
       return res.status(400).json({
-        error: 'Missing required fields: name, purpose, capabilities, walletAddress, accountId, privateKey',
+        error: 'Missing required fields: name, purpose, capabilities',
       });
     }
 
@@ -75,10 +78,6 @@ app.post('/api/agents/create', async (req: Request, res: Response) => {
       name,
       purpose,
       capabilities,
-      walletAddress,
-      accountId,
-      privateKey,
-      metadata,
     });
 
     if (!response.success) {

@@ -72,6 +72,7 @@ paths:
   /api/agents/create:
     post:
       summary: Create a new agent on Hedera blockchain
+      description: Create a new agent with just name, purpose, and capabilities. Everything else is generated automatically.
       tags:
         - Hedera Agents
       requestBody:
@@ -103,9 +104,6 @@ components:
         - name
         - purpose
         - capabilities
-        - walletAddress
-        - accountId
-        - privateKey
       properties:
         name:
           type: string
@@ -121,25 +119,6 @@ components:
             type: string
           example: ['product-search', 'price-comparison', 'payment-processing']
           description: Agent capabilities
-        walletAddress:
-          type: string
-          example: '0.0.7174687'
-          description: Hedera wallet address (ONE AGENT PER WALLET)
-        accountId:
-          type: string
-          example: '0.0.7174687'
-          description: Hedera account ID for agent creation
-        privateKey:
-          type: string
-          example: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e877de76ec94275b4'
-          description: Hedera private key for agent creation
-        metadata:
-          type: object
-          example:
-            version: '1.0.0'
-            model: 'gpt-4'
-            temperature: 0.7
-          description: Optional metadata
 
     HederaAgentResponse:
       type: object
