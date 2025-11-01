@@ -31,17 +31,7 @@ Always test thoroughly.`,
         'test-capability-1',
         'test-capability-2',
         'test-capability-3'
-      ],
-      walletAddress: hederaConfig.accountId,
-      accountId: hederaConfig.accountId,
-      privateKey: hederaConfig.privateKey,
-      metadata: {
-        version: '1.0.0',
-        model: 'gpt-4',
-        temperature: 0.7,
-        maxTokens: 2000,
-        testMode: true,
-      }
+      ]
     });
 
     // ========================================================================

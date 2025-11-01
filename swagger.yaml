@@ -72,6 +72,7 @@ paths:
   /api/agents/create:
     post:
       summary: Create a new agent on Hedera blockchain
+      description: Create a new agent with just name, purpose, and capabilities. Everything else is generated automatically.
       tags:
         - Hedera Agents
       requestBody:
@@ -80,6 +81,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/HederaAgentCreation'
+            example:
+              name: iPhone Shopping Assistant
+              purpose: You are an intelligent shopping assistant specialized in helping customers find and purchase iPhones
+              capabilities:
+                - product-search
+                - price-comparison
+                - payment-processing
       responses:
         '200':
           description: Agent created successfully on blockchain
@@ -87,6 +95,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HederaAgentResponse'
+              example:
+                success: true
+                agentId: agent-iphone-shopping-assistant-1761997309047-r6fiwu
+                name: iPhone Shopping Assistant
+                purpose: You are an intelligent shopping assistant...
+                capabilities:
+                  - product-search
+                  - price-comparison
+                  - payment-processing
+                walletAddress: '0x0433332a80ddce5efc4b14F18eca85d88c7B71a4'
+                evmAddress: '0x98d46dda75A216f94bF9784a6665A4E3821Da3D9'
+                privateKey: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e877de76ec94275b4'
+                topicId: '0.0.7179327'
+                transactionId: '0.0.7174687@1761997304.777519358'
         '400':
           description: Bad request - missing required fields
           content:
@@ -103,9 +125,6 @@ components:
         - name
         - purpose
         - capabilities
-        - walletAddress
-        - accountId
-        - privateKey
       properties:
         name:
           type: string
@@ -121,25 +140,6 @@ components:
             type: string
           example: ['product-search', 'price-comparison', 'payment-processing']
           description: Agent capabilities
-        walletAddress:
-          type: string
-          example: '0.0.7174687'
-          description: Hedera wallet address (ONE AGENT PER WALLET)
-        accountId:
-          type: string
-          example: '0.0.7174687'
-          description: Hedera account ID for agent creation
-        privateKey:
-          type: string
-          example: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e877de76ec94275b4'
-          description: Hedera private key for agent creation
-        metadata:
-          type: object
-          example:
-            version: '1.0.0'
-            model: 'gpt-4'
-            temperature: 0.7
-          description: Optional metadata
 
     HederaAgentResponse:
       type: object
