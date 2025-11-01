@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #021058;
+  --lightbg: #F9F9F9;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  @apply bg-white text-slate-900 antialiased;
+}
+
+/* Subtle gradient background helper */
+.bg-navy-gradient {
+  background: radial-gradient(1200px 600px at 80% -10%, rgba(2,16,88,0.25) 0%, rgba(2,16,88,0) 60%),
+              radial-gradient(800px 400px at 10% 110%, rgba(2,16,88,0.18) 0%, rgba(2,16,88,0) 60%);
+}
+
+.btn-primary {
+  @apply bg-navy text-white font-medium px-5 py-3 rounded-lg shadow hover:opacity-95 transition;
+}
+.btn-outline {
+  @apply border border-navy text-navy font-medium px-5 py-3 rounded-lg hover:bg-navy hover:text-white transition;
+}
+.card {
+  @apply bg-white rounded-xl shadow-card border border-slate-100;
+}
