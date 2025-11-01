@@ -39,13 +39,12 @@ app.get('/', (req: Request, res: Response) => {
     status: 'ok',
     service: 'HederaAgentsHub API',
     version: '1.0.0',
+    description: 'Create agents and wallets on the fly on Hedera blockchain',
     documentation: `${req.protocol}://${req.get('host')}/api-docs`,
     endpoints: {
-      health: 'GET /',
+      health: 'GET /health',
       swagger: 'GET /api-docs',
-      identity: 'POST /api/agent/register, GET /api/agent/:id',
-      reputation: 'POST /api/feedback, GET /api/reputation/:agentId',
-      validation: 'POST /api/validation/request, POST /api/validation/submit',
+      createAgent: 'POST /api/agents/create',
     },
   });
 });
