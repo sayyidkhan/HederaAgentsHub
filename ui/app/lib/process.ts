@@ -2,139 +2,229 @@ import { ProcessStep, HcsEvent } from './types';
 import { sleep } from './utils';
 import { addHcsEvent, addInvoice } from './mockDb';
 
-export async function startMockProcess(
+export async function startAgentOrderProcess(
   orderId: string,
-  onUpdate: (steps: ProcessStep[], events: HcsEvent[]) => void
+  agentType: 'buyer' | 'seller',
+  onUpdate: (steps: ProcessStep[], events: HcsEvent[]) => void,
+  config?: {
+    prompt?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    productRequirements?: string;
+    minSellerReputation?: number;
+    autoApprove?: boolean;
+  }
 ): Promise<void> {
   const initialSteps: ProcessStep[] = [
     {
-      key: 'listed',
-      title: 'Seller Item Listed',
-      subtitle: 'Item posted to marketplace',
-      status: 'done',
-    },
-    {
-      key: 'discovering',
-      title: 'Agent Discovering Buyer Agents',
-      subtitle: 'ERC-8004 Standard',
+      key: 'discovery',
+      title: 'Agent Discovery',
+      subtitle: agentType === 'buyer' ? 'Finding suitable seller agents' : 'Finding suitable buyer agents',
       status: 'active',
     },
     {
       key: 'trust',
-      title: 'Trust Established',
-      subtitle: 'Identity + Reputation Verified',
+      title: 'Creating Trust',
+      subtitle: 'Verifying identity and reputation',
       status: 'pending',
     },
     {
-      key: 'payment_requested',
-      title: 'Payment Requested',
-      subtitle: 'x402 Invoice Generated',
+      key: 'negotiation',
+      title: 'Price Negotiation',
+      subtitle: 'Negotiating terms within guardrails',
       status: 'pending',
     },
     {
-      key: 'payment_processing',
-      title: 'Blockchain Payment in Process',
-      subtitle: 'Hedera Testnet, Mirror Node pending',
+      key: 'handshake',
+      title: 'Handshake Agreement',
+      subtitle: 'Finalizing transaction terms',
       status: 'pending',
     },
     {
-      key: 'payment_verified',
-      title: 'Payment Verified',
-      subtitle: 'View on HashScan',
+      key: 'payment',
+      title: 'Payment Transfer',
+      subtitle: 'Processing payment on Hedera',
       status: 'pending',
     },
     {
-      key: 'completed',
-      title: 'Transaction Complete',
-      subtitle: 'Seller ships the item',
+      key: 'invoice',
+      title: 'Invoice Generated',
+      subtitle: 'Transaction complete with invoice',
       status: 'pending',
     },
   ];
 
   const events: HcsEvent[] = [];
   
-  // Step 1: Item Listed (already done)
+  // Step 1: Agent Discovery
   const event1: HcsEvent = {
     id: `event-${Date.now()}-1`,
     orderId,
     timestamp: new Date(),
-    type: 'SELLER_ITEM_LISTED',
-    summary: 'Seller listed item on marketplace',
-    data: { status: 'completed' },
+    type: 'AGENT_DISCOVERY',
+    summary: agentType === 'buyer' 
+      ? `Buyer agent discovering seller agents (Min reputation: ${config?.minSellerReputation || 4.5})`
+      : 'Seller agent discovering buyer agents via marketplace',
+    data: { 
+      agentType, 
+      agentsFound: 5, 
+      minReputation: config?.minSellerReputation || 4.5,
+      prompt: config?.prompt,
+      productRequirements: config?.productRequirements
+    },
   };
   events.push(event1);
   addHcsEvent(event1);
   onUpdate([...initialSteps], [...events]);
   
-  await sleep(2000);
+  await sleep(2500);
   
-  // Step 2: Discovering
-  initialSteps[1].status = 'done';
-  initialSteps[2].status = 'active';
+  // Step 2: Creating Trust
+  initialSteps[0].status = 'done';
+  initialSteps[1].status = 'active';
   const event2: HcsEvent = {
     id: `event-${Date.now()}-2`,
     orderId,
     timestamp: new Date(),
-    type: 'AGENT_DISCOVERING_BUYER_AGENTS',
-    summary: 'Discovering buyer agents via ERC-8004 registry',
-    data: { agentsFound: 3, minReputation: 700 },
+    type: 'TRUST_ESTABLISHMENT',
+    summary: 'Verifying identity via DID and checking reputation score',
+    data: { 
+      reputationScore: 4.8, 
+      didVerified: true, 
+      trustLevel: 'high',
+      meetsMinReputation: true
+    },
   };
   events.push(event2);
   addHcsEvent(event2);
   onUpdate([...initialSteps], [...events]);
   
-  await sleep(2000);
+  await sleep(2500);
   
-  // Step 3: Trust Established
-  initialSteps[2].status = 'done';
-  initialSteps[3].status = 'active';
+  // Step 3: Price Negotiation
+  initialSteps[1].status = 'done';
+  initialSteps[2].status = 'active';
+  const minPrice = config?.minPrice || (agentType === 'buyer' ? 80 : 90);
+  const maxPrice = config?.maxPrice || 100;
+  const initialPrice = agentType === 'buyer' ? maxPrice + 5 : minPrice - 5;
+  const finalPrice = agentType === 'buyer' 
+    ? Math.min(maxPrice - 2, 98) 
+    : Math.max(minPrice + 3, 93);
   const event3: HcsEvent = {
     id: `event-${Date.now()}-3`,
     orderId,
     timestamp: new Date(),
-    type: 'TRUST_ESTABLISHED',
-    summary: 'Identity and reputation verified',
-    data: { reputationScore: 875, verified: true },
+    type: 'PRICE_NEGOTIATION',
+    summary: `Negotiating price within guardrails: ${initialPrice} HBAR → ${finalPrice} HBAR (Range: ${minPrice}-${maxPrice} HBAR)`,
+    data: { 
+      initialPrice, 
+      finalPrice, 
+      minPrice,
+      maxPrice,
+      currency: 'HBAR',
+      rounds: 3,
+      guardrailsRespected: true,
+      autoApproved: config?.autoApprove || false
+    },
   };
   events.push(event3);
   addHcsEvent(event3);
   onUpdate([...initialSteps], [...events]);
   
-  await sleep(2000);
+  await sleep(3000);
   
-  // Step 4: Payment Requested
+  // Step 4: Handshake Agreement
+  initialSteps[2].status = 'done';
+  initialSteps[3].status = 'active';
+  const event4: HcsEvent = {
+    id: `event-${Date.now()}-4`,
+    orderId,
+    timestamp: new Date(),
+    type: 'HANDSHAKE_AGREEMENT',
+    summary: config?.autoApprove 
+      ? 'Auto-approved: Both parties agreed on terms - creating smart contract'
+      : 'Both parties agreed on terms - creating smart contract',
+    data: { 
+      agreedPrice: finalPrice,
+      deliveryTerms: '5-7 business days',
+      contractAddress: '0x' + Math.random().toString(16).substr(2, 40),
+      autoApproved: config?.autoApprove || false
+    },
+  };
+  events.push(event4);
+  addHcsEvent(event4);
+  onUpdate([...initialSteps], [...events]);
+  
+  await sleep(2500);
+  
+  // Step 5: Payment Transfer
   initialSteps[3].status = 'done';
   initialSteps[4].status = 'active';
+  
+  const txId = '0.0.1234567@' + (Date.now() / 1000).toFixed(3);
+  const event5: HcsEvent = {
+    id: `event-${Date.now()}-5`,
+    orderId,
+    timestamp: new Date(),
+    type: 'PAYMENT_TRANSFER',
+    summary: `Processing payment of ${finalPrice} HBAR on Hedera network`,
+    data: { 
+      amount: finalPrice,
+      asset: 'HBAR',
+      txId,
+      network: 'Hedera Testnet'
+    },
+  };
+  events.push(event5);
+  addHcsEvent(event5);
+  initialSteps[4].meta = { txId };
+  onUpdate([...initialSteps], [...events]);
+  
+  await sleep(3000);
+  
+  // Step 6: Invoice Generated
+  initialSteps[4].status = 'done';
+  initialSteps[5].status = 'active';
   
   const invoiceId = `INV-${Date.now()}`;
   addInvoice({
     id: invoiceId,
     orderId,
-    amount: 150,
-    asset: 'USDC (test)',
-    status: 'unpaid',
+    amount: finalPrice,
+    asset: 'HBAR',
+    status: 'paid',
+    txId,
+    hashscanUrl: `https://hashscan.io/testnet/transaction/${txId}`,
     createdAt: new Date(),
   });
   
-  const event4: HcsEvent = {
-    id: `event-${Date.now()}-4`,
+  const event6: HcsEvent = {
+    id: `event-${Date.now()}-6`,
     orderId,
     timestamp: new Date(),
-    type: 'PAYMENT_REQUESTED',
-    summary: 'x402 invoice generated',
-    data: { invoiceId, amount: 150, asset: 'USDC' },
+    type: 'INVOICE_GENERATED',
+    summary: `Transaction complete - invoice generated for ${finalPrice} HBAR with payment proof`,
+    data: { 
+      invoiceId,
+      amount: finalPrice,
+      asset: 'HBAR',
+      txId,
+      status: 'paid'
+    },
   };
-  events.push(event4);
-  addHcsEvent(event4);
-  initialSteps[3].meta = { invoiceId };
+  events.push(event6);
+  addHcsEvent(event6);
+  initialSteps[5].status = 'done';
+  initialSteps[5].meta = { invoiceId, txId };
   onUpdate([...initialSteps], [...events]);
-  
-  await sleep(2500);
-  
-  // Step 5: Payment Processing (waiting for user to click Pay)
-  // This step waits and doesn't auto-complete
-  initialSteps[4].status = 'active';
-  onUpdate([...initialSteps], [...events]);
+}
+
+export async function startMockProcess(
+  orderId: string,
+  onUpdate: (steps: ProcessStep[], events: HcsEvent[]) => void
+): Promise<void> {
+  // Kept for backward compatibility with existing code
+  return startAgentOrderProcess(orderId, 'seller', onUpdate);
 }
 
 export async function completePayment(

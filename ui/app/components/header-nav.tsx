@@ -51,6 +51,15 @@ export function HeaderNav() {
               pathname === "/" && "font-bold border-b-2 border-white pb-1"
             )}
           >
+            Home
+          </Link>
+          <Link 
+            href="/agents" 
+            className={cn(
+              "text-white transition-colors hover:text-white/80",
+              pathname === "/agents" && "font-bold border-b-2 border-white pb-1"
+            )}
+          >
             My Agents
           </Link>
           <Link 
@@ -60,7 +69,7 @@ export function HeaderNav() {
               pathname === "/marketplace" && "font-bold border-b-2 border-white pb-1"
             )}
           >
-            Marketplace Agents
+            Marketplace
           </Link>
         </nav>
 
@@ -87,13 +96,16 @@ export function HeaderNav() {
               {/* User Avatar with Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Button variant="ghost" className="relative h-10 rounded-full flex items-center gap-2 px-2">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email || 'User'} />
                       <AvatarFallback className="bg-orange-200 text-orange-700">
                         {user.user_metadata?.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || <User className="h-5 w-5" />}
                       </AvatarFallback>
                     </Avatar>
+                    <span className="hidden md:inline-block text-white font-medium text-sm">
+                      {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>

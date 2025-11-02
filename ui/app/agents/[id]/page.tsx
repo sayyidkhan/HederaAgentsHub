@@ -22,9 +22,11 @@ import {
   Shield,
   Activity,
   Calendar,
-  MapPin
+  MapPin,
+  User
 } from 'lucide-react';
 import Link from 'next/link';
+import { getUserById } from '@/lib/mockDb';
 
 interface PageProps {
   params: { id: string };
@@ -146,7 +148,12 @@ export default function AgentDetailPage({ params }: PageProps) {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline">Configure</Button>
-                  <Button>Start Agent</Button>
+                  <Link href={`/agents/${agent.id}/run`}>
+                    <Button className="gap-2">
+                      <Activity className="h-4 w-4" />
+                      Run Order
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </CardHeader>
@@ -156,33 +163,6 @@ export default function AgentDetailPage({ params }: PageProps) {
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* Performance Stats */}
-              <Card className="border-primary/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5" />
-                    Performance Metrics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-secondary/50 rounded-lg p-4 text-center">
-                      <div className="text-3xl font-bold text-primary mb-1">{agent.totalTransactions}</div>
-                      <div className="text-sm text-muted-foreground">Total Transactions</div>
-                    </div>
-                    <div className="bg-secondary/50 rounded-lg p-4 text-center">
-                      <div className="text-3xl font-bold text-primary mb-1 flex items-center justify-center">
-                        <TrendingUp className="h-6 w-6 mr-1" />
-                        {agent.successRate.toFixed(1)}%
-                      </div>
-                      <div className="text-sm text-muted-foreground">Success Rate</div>
-                    </div>
-                    <div className="bg-secondary/50 rounded-lg p-4 text-center">
-                      <div className="text-3xl font-bold text-primary mb-1">{agent.reputationScore.toFixed(1)}</div>
-                      <div className="text-sm text-muted-foreground">Reputation</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
 
               {/* Capabilities */}
               <Card className="border-primary/10">
@@ -237,6 +217,26 @@ export default function AgentDetailPage({ params }: PageProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Owner Information */}
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      Agent Owner
+                    </div>
+                    <div className="flex items-center gap-3 bg-secondary/30 p-3 rounded-lg">
+                      <Avatar className="h-10 w-10 border-2 border-primary/20">
+                        <AvatarImage src={getUserById(agent.userId)?.avatar} alt={getUserById(agent.userId)?.name} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                          {getUserById(agent.userId)?.name.split(' ').map(n => n[0]).join('') || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-sm">{getUserById(agent.userId)?.name}</p>
+                        <p className="text-xs text-muted-foreground">{getUserById(agent.userId)?.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <Separator />
                   <div>
                     <div className="text-sm text-muted-foreground mb-1">EVM Address</div>
                     <div className="font-mono text-xs bg-secondary/50 p-2 rounded break-all">
