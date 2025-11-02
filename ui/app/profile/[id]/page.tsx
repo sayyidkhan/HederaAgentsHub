@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { AuthGuard } from '@/lib/auth-guard';
 import { getProfile, getUserTransactions } from '@/lib/api';
 import { User, Transaction } from '@/lib/types';
 import { Copy, ExternalLink, Loader2, Star, CheckCircle2, Shield } from 'lucide-react';
