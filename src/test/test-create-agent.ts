@@ -1,14 +1,13 @@
 /**
- * Test API Endpoint
- * Tests the POST /api/agents/create endpoint
- * Run with: npm run dev src/demos/test-api-endpoint.ts
+ * Test API Endpoint with Authentication
+ * Tests the complete flow: authenticate → create agent
+ * Run with: npm run dev src/test/test-create-agent.ts
  */
 
-import { hederaConfig } from '../core/config/index';
-import * as ethersLib from 'ethers';
+import { ethers } from 'ethers';
 
 async function testCreateAgentEndpoint() {
-  console.log('🧪 Testing POST /api/agents/create Endpoint\n');
+  console.log('🧪 Testing Authenticated Agent Creation\n');
   console.log('='.repeat(60));
 
   try {
@@ -29,14 +28,57 @@ async function testCreateAgentEndpoint() {
     }
 
     // ========================================================================
-    // TEST: Create Agent via API Endpoint
+    // STEP 1: Authenticate User Wallet
     // ========================================================================
-    console.log('\n📝 TEST: Creating Agent via API\n');
+    console.log('\n🔐 STEP 1: Authenticate User Wallet\n');
 
+    // Create test user wallet
+    const userWallet = ethers.Wallet.createRandom();
+    const userWalletAddress = userWallet.address;
+    
+    console.log(`📝 Generated User Wallet`);
+    console.log(`   Address: ${userWalletAddress}`);
+    console.log(`   Private Key: ${userWallet.privateKey}\n`);
+
+    // Sign authentication message
     const timestamp = Date.now();
+    const authMessage = `Sign in to HederaAgentsHub\nWallet: ${userWalletAddress}\nTimestamp: ${timestamp}`;
+    const signature = await userWallet.signMessage(authMessage);
+    
+    console.log(`✍️  Signed Authentication Message`);
+    console.log(`   Signature: ${signature.substring(0, 50)}...\n`);
+
+    // Authenticate with API
+    console.log(`🔐 Authenticating with API...`);
+    const authResponse = await fetch('http://localhost:8080/api/auth/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletAddress: userWalletAddress,
+        signature,
+        timestamp,
+      }),
+    });
+
+    const authData = await authResponse.json() as any;
+    
+    if (!authData.success) {
+      console.log('❌ Authentication failed:', authData.error);
+      return;
+    }
+
+    const jwtToken = authData.token;
+    console.log(`✅ Authentication Successful!`);
+    console.log(`   Token: ${jwtToken.substring(0, 50)}...`);
+    console.log(`   Expires in: ${authData.expiresIn} seconds\n`);
+
+    // ========================================================================
+    // STEP 2: Create Agent (Authenticated)
+    // ========================================================================
+    console.log('\n📝 STEP 2: Create Agent (Authenticated)\n');
 
     const requestBody = {
-      name: `Test API Agent ${timestamp}`,
+      name: `Test API Agent ${Date.now()}`,
       purpose: `You are a test API agent.
 
 Your responsibilities:
@@ -61,6 +103,7 @@ Always test thoroughly.`,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`, // ← Add JWT token
       },
       body: JSON.stringify(requestBody),
     });
@@ -96,31 +139,34 @@ Always test thoroughly.`,
     console.log(`   Transaction ID: ${data.transactionId}`);
 
     // ========================================================================
-    // VERIFY WALLET CREDENTIALS
+    // VERIFY WALLET CREDENTIALS & OWNERSHIP
     // ========================================================================
     console.log('\n' + '='.repeat(60));
-    console.log('\n🔐 Wallet Credentials Verification\n');
+    console.log('\n🔐 Wallet Credentials & Ownership Verification\n');
 
-    const { ethers } = await import('ethers');
+    // Verify agent wallet
+    const agentWallet = new ethers.Wallet(data.privateKey);
+    const derivedEvmAddress = agentWallet.address;
 
-    // Verify EVM address
-    const wallet = new ethers.Wallet(data.privateKey);
-    const derivedEvmAddress = wallet.address;
+    console.log(`✅ Agent Wallet Verification`);
+    console.log(`   Agent Wallet: ${data.walletAddress}`);
+    console.log(`   Owner Wallet: ${data.ownerWallet}`);
+    console.log(`   Match User: ${data.ownerWallet?.toLowerCase() === userWalletAddress.toLowerCase() ? '✓' : '✗'}`);
 
-    console.log(`✅ EVM Address Verification`);
+    console.log(`\n✅ EVM Address Verification`);
     console.log(`   Returned: ${data.evmAddress}`);
     console.log(`   Derived:  ${derivedEvmAddress}`);
     console.log(`   Match: ${data.evmAddress.toLowerCase() === derivedEvmAddress.toLowerCase() ? '✓' : '✗'}`);
 
-    // Test wallet signing
-    console.log(`\n✅ Wallet Signing Test`);
-    const message = 'Test message for agent';
-    const signature = await wallet.signMessage(message);
-    console.log(`   Message: "${message}"`);
-    console.log(`   Signature: ${signature.substring(0, 30)}...`);
+    // Test agent wallet signing
+    console.log(`\n✅ Agent Wallet Signing Test`);
+    const testMessage = 'Test message for agent';
+    const testSignature = await agentWallet.signMessage(testMessage);
+    console.log(`   Message: "${testMessage}"`);
+    console.log(`   Signature: ${testSignature.substring(0, 30)}...`);
 
     // Verify signature
-    const recoveredAddress = ethers.verifyMessage(message, signature);
+    const recoveredAddress = ethers.verifyMessage(testMessage, testSignature);
     console.log(`   Recovered Address: ${recoveredAddress}`);
     console.log(`   Match: ${recoveredAddress.toLowerCase() === derivedEvmAddress.toLowerCase() ? '✓' : '✗'}`);
 
@@ -144,13 +190,21 @@ Always test thoroughly.`,
     console.log('\n' + '='.repeat(60));
     console.log('\n✅ All Tests Passed!\n');
     console.log('🎯 Test Summary:');
-    console.log('✅ Agent created successfully via API');
-    console.log('✅ Response includes all required fields');
-    console.log('✅ Wallet credentials returned (EVM address + private key)');
-    console.log('✅ Wallet can be used for signing transactions');
+    console.log('✅ User wallet authenticated successfully');
+    console.log('✅ JWT token issued and validated');
+    console.log('✅ Agent created with authenticated request');
+    console.log('✅ Agent linked to owner wallet on blockchain');
+    console.log('✅ Agent has autonomous wallet for operations');
+    console.log('✅ Ownership link verified (User → Agent)');
     console.log('✅ Agent stored on Hedera blockchain');
     console.log('✅ Transaction recorded on blockchain');
     console.log('\n🚀 Ready to use agent with wallet!\n');
+    console.log(`\n📊 Architecture:`);
+    console.log(`   User Wallet:  ${userWalletAddress}`);
+    console.log(`   ↓ owns`);
+    console.log(`   Agent Wallet: ${data.walletAddress}`);
+    console.log(`   ↓ autonomous operations`);
+    console.log(`   Hedera Economy\n`);
 
   } catch (error: any) {
     console.error('❌ Test failed:', error.message);

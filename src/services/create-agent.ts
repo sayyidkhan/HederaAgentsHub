@@ -13,6 +13,9 @@ export interface CreateAgentRequest {
   name: string;
   purpose: string;
   capabilities: string[];
+  ownerWallet?: string; // User's wallet (authenticated via JWT)
+  accountId?: string; // Account ID to use for creating agent
+  privateKey?: string; // Private key to use for creating agent
 }
 
 export interface CreateAgentResponse {
@@ -21,7 +24,8 @@ export interface CreateAgentResponse {
   name?: string;
   purpose?: string;           // ← Agent purpose (system prompt)
   capabilities?: string[];    // ← Agent capabilities
-  walletAddress?: string;
+  walletAddress?: string;     // ← Agent's autonomous wallet
+  ownerWallet?: string;       // ← User's wallet (owner)
   evmAddress?: string;        // ← EVM address for wallet access
   privateKey?: string;        // ← Private key for wallet access
   topicId?: string;
@@ -40,9 +44,9 @@ export async function createAgent(request: CreateAgentRequest): Promise<CreateAg
     console.log(`   Name: ${request.name}`);
     console.log(`   Capabilities: ${request.capabilities.join(', ')}\n`);
 
-    // Generate dynamic fields
-    const accountId = hederaConfig.accountId;
-    const privateKey = hederaConfig.privateKey;
+    // Use provided credentials or fall back to env
+    const accountId = request.accountId || hederaConfig.accountId;
+    const privateKey = request.privateKey || hederaConfig.privateKey;
     
     // Generate random wallet for this agent
     const generatedWallet = ethers.Wallet.createRandom();
@@ -59,6 +63,7 @@ export async function createAgent(request: CreateAgentRequest): Promise<CreateAg
       purpose: request.purpose,
       capabilities: request.capabilities,
       walletAddress: walletAddress,
+      ownerWallet: request.ownerWallet, // Link to user's wallet
     };
 
     // Register agent
@@ -79,6 +84,7 @@ export async function createAgent(request: CreateAgentRequest): Promise<CreateAg
       purpose: registeredAgent.purpose,
       capabilities: registeredAgent.capabilities,
       walletAddress: registeredAgent.walletAddress,
+      ownerWallet: registeredAgent.ownerWallet,
       evmAddress: evmAddress,
       privateKey: privateKey,
       topicId: registeredAgent.topicId,

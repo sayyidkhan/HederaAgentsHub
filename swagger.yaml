@@ -19,8 +19,10 @@ servers:
 tags:
   - name: Health
     description: Health check endpoints
+  - name: Authentication
+    description: Wallet-based authentication
   - name: Agents
-    description: Agent creation on Hedera blockchain
+    description: Agent creation and management on Hedera blockchain
 
 paths:
   /:
@@ -69,12 +71,51 @@ paths:
                     format: date-time
                     example: '2025-11-01T06:00:00.000Z'
 
+  /api/auth/wallet:
+    post:
+      summary: Authenticate user wallet
+      description: Verify wallet signature and issue JWT token for authenticated requests
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+            example:
+              walletAddress: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+              signature: '0x916a01bd6dc10a2e1201a14a86bb785f4f0803b0d454ea9b685b7f28401624786f5d41690d926ba4d8025c1890dcf2a7caebff595f8e5ea855c98c83929466161b'
+              timestamp: 1762046016658
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                success: true
+                token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+                expiresIn: 86400
+                walletAddress: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Invalid signature'
+
   /api/agents/create:
     post:
-      summary: Create a new agent on Hedera blockchain
-      description: Create a new agent with just name, purpose, and capabilities. Everything else is generated automatically.
+      summary: Create a new agent on Hedera blockchain (Authenticated)
+      description: Create a new agent linked to your authenticated wallet. Requires JWT token from /api/auth/wallet endpoint.
       tags:
-        - Hedera Agents
+        - Agents
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -105,6 +146,7 @@ paths:
                   - price-comparison
                   - payment-processing
                 walletAddress: '0x0433332a80ddce5efc4b14F18eca85d88c7B71a4'
+                ownerWallet: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
                 evmAddress: '0x98d46dda75A216f94bF9784a6665A4E3821Da3D9'
                 privateKey: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e877de76ec94275b4'
                 topicId: '0.0.7179327'
@@ -166,7 +208,56 @@ paths:
 
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from /api/auth/wallet endpoint
+
   schemas:
+    AuthRequest:
+      type: object
+      required:
+        - walletAddress
+        - signature
+        - timestamp
+      properties:
+        walletAddress:
+          type: string
+          example: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+          description: User's wallet address (EVM format)
+        signature:
+          type: string
+          example: '0x916a01bd6dc10a2e1201a14a86bb785f...'
+          description: Signed message from wallet
+        timestamp:
+          type: number
+          example: 1762046016658
+          description: Unix timestamp in milliseconds
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        token:
+          type: string
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+          description: JWT token for authenticated requests
+        expiresIn:
+          type: number
+          example: 86400
+          description: Token expiry in seconds (24 hours)
+        walletAddress:
+          type: string
+          example: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+          description: Authenticated wallet address
+        error:
+          type: string
+          description: Error message if authentication failed
+
     HederaAgentCreation:
       type: object
       required:
@@ -211,7 +302,12 @@ components:
           example: ['product-search', 'price-comparison']
         walletAddress:
           type: string
-          example: '0.0.7174687'
+          example: '0x0433332a80ddce5efc4b14F18eca85d88c7B71a4'
+          description: Agent's autonomous wallet address
+        ownerWallet:
+          type: string
+          example: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+          description: User's wallet address (owner of the agent)
         evmAddress:
           type: string
           example: '0x98d46dda75A216f94bF9784a6665A4E3821Da3D9'

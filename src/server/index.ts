@@ -10,8 +10,10 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 
-// Import Agent Services
+// Import Services
 import { createAgent, getAgentMetadata } from '../services';
+import { authenticateWallet } from '../services/auth';
+import { authenticateToken } from '../middleware/auth';
 
 // Initialize Express
 const app = express();
@@ -44,6 +46,7 @@ app.get('/', (req: Request, res: Response) => {
     endpoints: {
       health: 'GET /health',
       swagger: 'GET /api-docs',
+      authenticate: 'POST /api/auth/wallet',
       createAgent: 'POST /api/agents/create',
       getAgentMetadata: 'POST /api/agents/metadata',
     },
@@ -55,6 +58,41 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// AUTHENTICATION ENDPOINT
+// ============================================================================
+
+/**
+ * POST /api/auth/wallet
+ * Authenticate user's wallet with signature verification
+ * Returns JWT token for subsequent authenticated requests
+ */
+app.post('/api/auth/wallet', async (req: Request, res: Response) => {
+  try {
+    const { walletAddress, signature, timestamp } = req.body;
+
+    if (!walletAddress || !signature || !timestamp) {
+      return res.status(400).json({
+        error: 'Missing required fields: walletAddress, signature, timestamp',
+      });
+    }
+
+    const response = await authenticateWallet({
+      walletAddress,
+      signature,
+      timestamp,
+    });
+
+    if (!response.success) {
+      return res.status(401).json({ error: response.error });
+    }
+
+    res.json(response);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
 // AGENT CREATION ENDPOINT
 // ============================================================================
 
@@ -62,23 +100,34 @@ app.get('/health', (req: Request, res: Response) => {
  * POST /api/agents/create
  * Create a new agent on Hedera blockchain with wallet
  * Required: name, purpose, capabilities
- * Everything else is generated dynamically
+ * Optional: ownerWallet (can be provided in body for demo mode)
  */
 app.post('/api/agents/create', async (req: Request, res: Response) => {
   try {
-    const { name, purpose, capabilities } = req.body;
+    const { name, purpose, capabilities, ownerWallet, accountId, privateKey } = req.body;
 
-    // Only require: name, purpose, capabilities
+    // Validate required fields
     if (!name || !purpose || !capabilities) {
       return res.status(400).json({
         error: 'Missing required fields: name, purpose, capabilities',
       });
     }
 
+    if (ownerWallet) {
+      console.log(`\n👤 Owner Wallet: ${ownerWallet}`);
+    }
+    if (accountId) {
+      console.log(`🔑 Using Account: ${accountId}`);
+    }
+    console.log(`📝 Creating agent...\n`);
+
     const response = await createAgent({
       name,
       purpose,
       capabilities,
+      ownerWallet, // Link agent to owner wallet if provided
+      accountId, // Use provided account ID
+      privateKey, // Use provided private key
     });
 
     if (!response.success) {
@@ -94,6 +143,57 @@ app.post('/api/agents/create', async (req: Request, res: Response) => {
 // ============================================================================
 // GET AGENT METADATA ENDPOINT
 // ============================================================================
+
+/**
+ * GET /api/agents/metadata
+ * Get all agents owned by a wallet address
+ * Query: ?walletAddress=0.0.1234567&accountId=0.0.1234567&privateKey=0x...
+ */
+app.get('/api/agents/metadata', async (req: Request, res: Response) => {
+  try {
+    const { walletAddress, accountId, privateKey } = req.query;
+
+    if (!walletAddress || typeof walletAddress !== 'string') {
+      return res.status(400).json({
+        error: 'Missing required query parameter: walletAddress',
+      });
+    }
+
+    console.log(`\n📋 Fetching agents for wallet: ${walletAddress}`);
+
+    // Use provided credentials or fall back to env
+    const { getSharedRegistry } = await import('../services/shared-registry');
+    const { hederaConfig } = await import('../core/config/index');
+    
+    const useAccountId = (accountId as string) || hederaConfig.accountId;
+    const usePrivateKey = (privateKey as string) || hederaConfig.privateKey;
+    
+    const registry = await getSharedRegistry(useAccountId, usePrivateKey);
+    
+    const agents = await registry.getAgentsByOwner(walletAddress);
+
+    console.log(`   Found ${agents.length} agent(s)`);
+
+    res.json({
+      success: true,
+      walletAddress,
+      count: agents.length,
+      agents: agents.map(agent => ({
+        agentId: agent.agentId,
+        name: agent.name,
+        purpose: agent.purpose,
+        capabilities: agent.capabilities,
+        evmAddress: agent.walletAddress, // Agent's wallet address
+        topicId: agent.topicId,
+        ownerWallet: agent.ownerWallet,
+        createdAt: agent.createdAt,
+      })),
+    });
+  } catch (error: any) {
+    console.error('❌ Get agents by owner error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 /**
  * POST /api/agents/metadata
