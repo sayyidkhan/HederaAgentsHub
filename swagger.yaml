@@ -1,0 +1,414 @@
+openapi: 3.0.0
+info:
+  title: HederaAgentsHub API
+  description: Create agents and wallets on the fly on Hedera blockchain
+  version: 1.0.0
+  contact:
+    name: Nasrulhaq Khan
+    email: your-email@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://your-app.up.railway.app
+    description: Production server (Railway)
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Authentication
+    description: Wallet-based authentication
+  - name: Agents
+    description: Agent creation and management on Hedera blockchain
+
+paths:
+  /:
+    get:
+      summary: Get API information
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: HederaAgentsHub API
+                  version:
+                    type: string
+                    example: 1.0.0
+                  endpoints:
+                    type: object
+
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2025-11-01T06:00:00.000Z'
+
+  /api/auth/wallet:
+    post:
+      summary: Authenticate user wallet
+      description: Verify wallet signature and issue JWT token for authenticated requests
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+            example:
+              walletAddress: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+              signature: '0x916a01bd6dc10a2e1201a14a86bb785f4f0803b0d454ea9b685b7f28401624786f5d41690d926ba4d8025c1890dcf2a7caebff595f8e5ea855c98c83929466161b'
+              timestamp: 1762046016658
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                success: true
+                token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+                expiresIn: 86400
+                walletAddress: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Invalid signature'
+
+  /api/agents/create:
+    post:
+      summary: Create a new agent on Hedera blockchain (Authenticated)
+      description: Create a new agent linked to your authenticated wallet. Requires JWT token from /api/auth/wallet endpoint.
+      tags:
+        - Agents
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HederaAgentCreation'
+            example:
+              name: iPhone Shopping Assistant
+              purpose: You are an intelligent shopping assistant specialized in helping customers find and purchase iPhones
+              capabilities:
+                - product-search
+                - price-comparison
+                - payment-processing
+      responses:
+        '200':
+          description: Agent created successfully on blockchain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HederaAgentResponse'
+              example:
+                success: true
+                agentId: agent-iphone-shopping-assistant-1761997309047-r6fiwu
+                name: iPhone Shopping Assistant
+                purpose: You are an intelligent shopping assistant...
+                capabilities:
+                  - product-search
+                  - price-comparison
+                  - payment-processing
+                walletAddress: '0x0433332a80ddce5efc4b14F18eca85d88c7B71a4'
+                ownerWallet: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+                evmAddress: '0x98d46dda75A216f94bF9784a6665A4E3821Da3D9'
+                privateKey: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e877de76ec94275b4'
+                topicId: '0.0.7179327'
+                transactionId: '0.0.7174687@1761997304.777519358'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/agents/metadata:
+    post:
+      summary: Get metadata for multiple agents
+      description: Retrieve metadata for agents by their IDs. Pass a list of agent IDs and get back all their details.
+      tags:
+        - Hedera Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetAgentMetadataRequest'
+            example:
+              agentIds:
+                - agent-test-api-agent-1761999643361-1761999643389-pn6ewo
+      responses:
+        '200':
+          description: Agent metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAgentMetadataResponse'
+              example:
+                success: true
+                total: 1
+                found: 1
+                notFound: 0
+                agents:
+                  - agentId: agent-test-api-agent-1761999643361-1761999643389-pn6ewo
+                    name: Test API Agent 1761999643361
+                    purpose: You are a test API agent. Your responsibilities - Test the API endpoint - Verify agent creation - Confirm wallet credentials Always test thoroughly.
+                    capabilities:
+                      - api-test-1
+                      - api-test-2
+                      - api-test-3
+                    walletAddress: '0xFf6E51c1ff62372d810d129C83ae88e97146e953'
+                    topicId: '0.0.7179358'
+                    transactionId: '0.0.7174687@1761999639.657573415'
+                    topicUrl: 'https://hashscan.io/testnet/topic/0.0.7179358'
+                    transactionUrl: 'https://hashscan.io/testnet/transaction/0.0.7174687@1761999639.657573415'
+                    found: true
+        '400':
+          description: Bad request - missing or invalid agentIds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from /api/auth/wallet endpoint
+
+  schemas:
+    AuthRequest:
+      type: object
+      required:
+        - walletAddress
+        - signature
+        - timestamp
+      properties:
+        walletAddress:
+          type: string
+          example: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+          description: User's wallet address (EVM format)
+        signature:
+          type: string
+          example: '0x916a01bd6dc10a2e1201a14a86bb785f...'
+          description: Signed message from wallet
+        timestamp:
+          type: number
+          example: 1762046016658
+          description: Unix timestamp in milliseconds
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        token:
+          type: string
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+          description: JWT token for authenticated requests
+        expiresIn:
+          type: number
+          example: 86400
+          description: Token expiry in seconds (24 hours)
+        walletAddress:
+          type: string
+          example: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+          description: Authenticated wallet address
+        error:
+          type: string
+          description: Error message if authentication failed
+
+    HederaAgentCreation:
+      type: object
+      required:
+        - name
+        - purpose
+        - capabilities
+      properties:
+        name:
+          type: string
+          example: iPhone Shopping Assistant
+          description: Agent name
+        purpose:
+          type: string
+          example: You are an intelligent shopping assistant...
+          description: Agent purpose (system prompt)
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: ['product-search', 'price-comparison', 'payment-processing']
+          description: Agent capabilities
+
+    HederaAgentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        agentId:
+          type: string
+          example: agent-iphone-shopping-assistant-1761990620227-hqa6d
+        name:
+          type: string
+          example: iPhone Shopping Assistant
+        purpose:
+          type: string
+          example: You are an intelligent shopping assistant...
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: ['product-search', 'price-comparison']
+        walletAddress:
+          type: string
+          example: '0x0433332a80ddce5efc4b14F18eca85d88c7B71a4'
+          description: Agent's autonomous wallet address
+        ownerWallet:
+          type: string
+          example: '0x3C3e4b8992FbB907f75bD901Ce136e7bD18cF2B5'
+          description: User's wallet address (owner of the agent)
+        evmAddress:
+          type: string
+          example: '0x98d46dda75A216f94bF9784a6665A4E3821Da3D9'
+          description: EVM address for wallet access
+        privateKey:
+          type: string
+          example: '0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e...'
+          description: Private key for wallet operations
+        topicId:
+          type: string
+          example: '0.0.7178279'
+          description: Hedera Topic ID where agent is stored
+        transactionId:
+          type: string
+          example: '0.0.7174687@1761990615.794170000'
+          description: Blockchain transaction ID
+        error:
+          type: string
+          description: Error message if creation failed
+
+    GetAgentMetadataRequest:
+      type: object
+      required:
+        - agentIds
+      properties:
+        agentIds:
+          type: array
+          items:
+            type: string
+          example:
+            - agent-iphone-shopping-assistant-1761997309047-r6fiwu
+            - agent-test-api-agent-1761996314596-4s8iym
+          description: List of agent IDs to retrieve metadata for
+
+    AgentMetadata:
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: Unique agent identifier
+        name:
+          type: string
+          description: Agent name
+        purpose:
+          type: string
+          description: Agent purpose (system prompt)
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: Agent capabilities
+        walletAddress:
+          type: string
+          description: Wallet address associated with agent
+        topicId:
+          type: string
+          description: Hedera Topic ID where agent is stored
+        transactionId:
+          type: string
+          description: Blockchain transaction ID
+        topicUrl:
+          type: string
+          description: HashScan URL to view the topic on blockchain
+        transactionUrl:
+          type: string
+          description: HashScan URL to view the transaction on blockchain
+        found:
+          type: boolean
+          description: Whether agent was found
+        error:
+          type: string
+          description: Error message if agent not found
+
+    GetAgentMetadataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether request was successful
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentMetadata'
+          description: List of agent metadata
+        total:
+          type: integer
+          description: Total number of agent IDs requested
+        found:
+          type: integer
+          description: Number of agents found
+        notFound:
+          type: integer
+          description: Number of agents not found
+        error:
+          type: string
+          description: Error message if request failed
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Error message
+          description: Error description

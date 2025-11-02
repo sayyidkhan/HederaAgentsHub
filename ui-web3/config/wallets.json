@@ -1,0 +1,23 @@
+{
+  "demoWallets": [
+    {
+      "id": "wallet-1",
+      "name": "Demo Wallet 1 (sayyid)",
+      "accountId": "0.0.7174687",
+      "evmAddress": "0x98d46dda75a216f94bf9784a6665a4e3821da3d9",
+      "privateKey": "0xab9c734fb98648d32634d96e9a1629fe06f676eb7b940b6e877de76ec94275b4",
+      "network": "testnet",
+      "description": "Wallet 1"
+    },
+    {
+      "id": "wallet-2",
+      "name": "Demo Wallet 2 (marcus)",
+      "accountId": "0.0.7174617",
+      "evmAddress": "0xc6fea5433c4c96f28d842406b9c79860a5328f53",
+      "privateKey": "0xbb8f2fdd9443baa69425b8c83789f37e39b5562fb9bc2bc84a2004e3c1e2adab",
+      "network": "testnet",
+      "description": "Wallet 2"
+    }
+  ],
+  "defaultWallet": "wallet-1"
+}
