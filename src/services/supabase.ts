@@ -1,9 +1,9 @@
 /**
  * Supabase Service
- * Service to store and retrieve agent data from Supabase using direct PostgreSQL connection
+ * Service to store and retrieve agent data from Supabase using Supabase client
  */
 
-import { Pool, QueryResult } from 'pg';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { supabaseConfig } from '../core/config/index';
 
 export interface AgentRecord {
@@ -20,54 +20,45 @@ export interface AgentRecord {
 }
 
 class SupabaseService {
-  private pool: Pool | null = null;
+  private client: SupabaseClient | null = null;
 
   /**
-   * Initialize PostgreSQL connection pool
+   * Initialize Supabase client
    */
-  private getPool(): Pool {
-    if (!this.pool) {
-      if (!supabaseConfig.databaseUrl) {
-        throw new Error('Database configuration is missing. Please set DATABASE_URL in environment variables.');
+  private getClient(): SupabaseClient {
+    if (!this.client) {
+      if (!supabaseConfig.supabaseUrl || !supabaseConfig.supabaseAnonKey) {
+        throw new Error('Supabase configuration is missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in environment variables.');
       }
-      this.pool = new Pool({
-        connectionString: supabaseConfig.databaseUrl,
-        ssl: {
-          rejectUnauthorized: false, // Required for Supabase
-        },
-        max: 20, // Maximum number of clients in the pool
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-      });
+      this.client = createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseAnonKey);
     }
-    return this.pool;
+    return this.client;
   }
 
   /**
    * Store agent data in Supabase
    */
   async storeAgent(agentData: Omit<AgentRecord, 'id' | 'created_at' | 'updated_at'>): Promise<AgentRecord> {
-    const pool = this.getPool();
+    const client = this.getClient();
     try {
-      const query = `
-        INSERT INTO agents (agent_id, name, purpose, capabilities, wallet_address, evm_address, topic_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
-      `;
-      const values = [
-        agentData.agent_id,
-        agentData.name,
-        agentData.purpose,
-        agentData.capabilities,
-        agentData.wallet_address,
-        agentData.evm_address || null,
-        agentData.topic_id || null,
-      ];
+      const { data, error } = await client
+        .from('agents')
+        .insert({
+          agent_id: agentData.agent_id,
+          name: agentData.name,
+          purpose: agentData.purpose,
+          capabilities: agentData.capabilities,
+          wallet_address: agentData.wallet_address,
+          evm_address: agentData.evm_address || null,
+          topic_id: agentData.topic_id || null,
+        })
+        .select()
+        .single();
 
-      const result: QueryResult = await pool.query(query, values);
+      if (error) throw error;
       
       console.log('✅ Agent stored in Supabase successfully');
-      return result.rows[0] as AgentRecord;
+      return data as AgentRecord;
     } catch (error: any) {
       console.error('Failed to store agent in Supabase:', error.message);
       throw error;
@@ -78,16 +69,20 @@ class SupabaseService {
    * Get agent by agent_id
    */
   async getAgent(agentId: string): Promise<AgentRecord | null> {
-    const pool = this.getPool();
+    const client = this.getClient();
     try {
-      const query = 'SELECT * FROM agents WHERE agent_id = $1';
-      const result: QueryResult = await pool.query(query, [agentId]);
+      const { data, error } = await client
+        .from('agents')
+        .select('*')
+        .eq('agent_id', agentId)
+        .single();
 
-      if (result.rows.length === 0) {
-        return null;
+      if (error) {
+        if (error.code === 'PGRST116') return null; // Not found
+        throw error;
       }
 
-      return result.rows[0] as AgentRecord;
+      return data as AgentRecord;
     } catch (error: any) {
       console.error('Failed to get agent from Supabase:', error.message);
       throw error;
@@ -98,12 +93,16 @@ class SupabaseService {
    * Get all agents
    */
   async getAllAgents(): Promise<AgentRecord[]> {
-    const pool = this.getPool();
+    const client = this.getClient();
     try {
-      const query = 'SELECT * FROM agents ORDER BY created_at DESC';
-      const result: QueryResult = await pool.query(query);
+      const { data, error } = await client
+        .from('agents')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      return result.rows as AgentRecord[];
+      if (error) throw error;
+
+      return (data || []) as AgentRecord[];
     } catch (error: any) {
       console.error('Failed to get agents from Supabase:', error.message);
       throw error;
@@ -114,57 +113,32 @@ class SupabaseService {
    * Update agent data
    */
   async updateAgent(agentId: string, updates: Partial<AgentRecord>): Promise<AgentRecord> {
-    const pool = this.getPool();
+    const client = this.getClient();
     try {
-      // Build dynamic SET clause
-      const setFields: string[] = [];
-      const values: any[] = [];
-      let paramCounter = 1;
+      const updateData: any = {};
 
-      if (updates.name !== undefined) {
-        setFields.push(`name = $${paramCounter++}`);
-        values.push(updates.name);
-      }
-      if (updates.purpose !== undefined) {
-        setFields.push(`purpose = $${paramCounter++}`);
-        values.push(updates.purpose);
-      }
-      if (updates.capabilities !== undefined) {
-        setFields.push(`capabilities = $${paramCounter++}`);
-        values.push(updates.capabilities);
-      }
-      if (updates.wallet_address !== undefined) {
-        setFields.push(`wallet_address = $${paramCounter++}`);
-        values.push(updates.wallet_address);
-      }
-      if (updates.evm_address !== undefined) {
-        setFields.push(`evm_address = $${paramCounter++}`);
-        values.push(updates.evm_address);
-      }
-      if (updates.topic_id !== undefined) {
-        setFields.push(`topic_id = $${paramCounter++}`);
-        values.push(updates.topic_id);
-      }
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.purpose !== undefined) updateData.purpose = updates.purpose;
+      if (updates.capabilities !== undefined) updateData.capabilities = updates.capabilities;
+      if (updates.wallet_address !== undefined) updateData.wallet_address = updates.wallet_address;
+      if (updates.evm_address !== undefined) updateData.evm_address = updates.evm_address;
+      if (updates.topic_id !== undefined) updateData.topic_id = updates.topic_id;
 
-      if (setFields.length === 0) {
+      if (Object.keys(updateData).length === 0) {
         throw new Error('No fields to update');
       }
 
-      values.push(agentId);
-      const query = `
-        UPDATE agents 
-        SET ${setFields.join(', ')}
-        WHERE agent_id = $${paramCounter}
-        RETURNING *
-      `;
+      const { data, error } = await client
+        .from('agents')
+        .update(updateData)
+        .eq('agent_id', agentId)
+        .select()
+        .single();
 
-      const result: QueryResult = await pool.query(query, values);
+      if (error) throw error;
+      if (!data) throw new Error(`Agent with id ${agentId} not found`);
 
-      if (result.rows.length === 0) {
-        throw new Error(`Agent with id ${agentId} not found`);
-      }
-
-      return result.rows[0] as AgentRecord;
+      return data as AgentRecord;
     } catch (error: any) {
       console.error('Failed to update agent in Supabase:', error.message);
       throw error;
@@ -175,10 +149,14 @@ class SupabaseService {
    * Delete agent
    */
   async deleteAgent(agentId: string): Promise<void> {
-    const pool = this.getPool();
+    const client = this.getClient();
     try {
-      const query = 'DELETE FROM agents WHERE agent_id = $1';
-      await pool.query(query, [agentId]);
+      const { error } = await client
+        .from('agents')
+        .delete()
+        .eq('agent_id', agentId);
+
+      if (error) throw error;
 
       console.log('✅ Agent deleted from Supabase successfully');
     } catch (error: any) {
@@ -188,13 +166,11 @@ class SupabaseService {
   }
 
   /**
-   * Close the connection pool
+   * Close the Supabase client (not needed, but kept for compatibility)
    */
   async close(): Promise<void> {
-    if (this.pool) {
-      await this.pool.end();
-      this.pool = null;
-    }
+    // Supabase client doesn't need explicit closing
+    this.client = null;
   }
 }
 

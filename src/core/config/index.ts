@@ -32,6 +32,8 @@ export const x402Config = {
 
 export const supabaseConfig = {
   databaseUrl: process.env.DATABASE_URL || "",
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+  supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
 };
 
 export function validateConfig(): boolean {

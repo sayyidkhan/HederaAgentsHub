@@ -17,7 +17,8 @@ export interface AgentDefinition {
   name: string;
   purpose: string; // System prompt
   capabilities: string[];
-  walletAddress: string; // One agent per wallet
+  walletAddress: string; // Agent's autonomous wallet
+  ownerWallet?: string; // User's wallet (who created/owns the agent)
   metadata?: {
     version?: string;
     model?: string;
@@ -32,7 +33,8 @@ export interface RegisteredAgent {
   name: string;
   purpose: string;
   capabilities: string[];
-  walletAddress: string; // One agent per wallet
+  walletAddress: string; // Agent's autonomous wallet
+  ownerWallet?: string; // User's wallet (who created/owns the agent)
   topicId: string; // Hedera Topic ID
   consensusTimestamp: string;
   transactionId: string;
@@ -155,6 +157,7 @@ export class HederaAgentRegistry {
         purpose: definition.purpose,
         capabilities: definition.capabilities,
         walletAddress: definition.walletAddress,
+        ownerWallet: definition.ownerWallet || null, // Link to user's wallet
         metadata: definition.metadata || {},
         timestamp: Date.now(),
       };
@@ -185,6 +188,7 @@ export class HederaAgentRegistry {
         purpose: definition.purpose,
         capabilities: definition.capabilities,
         walletAddress: definition.walletAddress,
+        ownerWallet: definition.ownerWallet,
         topicId: topicId,
         consensusTimestamp: submitReceipt.status.toString(),
         transactionId: transactionId,
@@ -340,6 +344,7 @@ export class HederaAgentRegistry {
               purpose: agentData.purpose,
               capabilities: agentData.capabilities,
               walletAddress: agentData.walletAddress,
+              ownerWallet: agentData.ownerWallet,
               topicId: topicId,
               consensusTimestamp: msg.consensus_timestamp,
               transactionId: transactionId,
@@ -423,6 +428,7 @@ export class HederaAgentRegistry {
               purpose: agentData.purpose,
               capabilities: agentData.capabilities,
               walletAddress: agentData.walletAddress,
+              ownerWallet: agentData.ownerWallet,
               topicId: topicId,
               consensusTimestamp: msg.consensus_timestamp,
               transactionId: transactionId,
@@ -478,6 +484,96 @@ export class HederaAgentRegistry {
    */
   getAllAgents(): RegisteredAgent[] {
     return Array.from(this.agents.values());
+  }
+
+  /**
+   * Get all agents owned by a specific wallet address
+   */
+  async getAgentsByOwner(ownerWallet: string): Promise<RegisteredAgent[]> {
+    try {
+      const agents: RegisteredAgent[] = [];
+      
+      // Search in current registry topic if set
+      if (this.registryTopicId) {
+        const topicAgents = await this.searchAgentsByOwnerInTopic(
+          this.registryTopicId.toString(),
+          ownerWallet
+        );
+        agents.push(...topicAgents);
+      }
+
+      // Search all topics created by this account
+      const allTopics = await this.getAllAccountTopics();
+      for (const topicId of allTopics) {
+        if (topicId === this.registryTopicId?.toString()) continue; // Skip already searched
+        const topicAgents = await this.searchAgentsByOwnerInTopic(topicId, ownerWallet);
+        agents.push(...topicAgents);
+      }
+
+      return agents;
+    } catch (error: any) {
+      console.error(`Error fetching agents by owner:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Search for all agents by owner wallet in a specific topic
+   */
+  private async searchAgentsByOwnerInTopic(
+    topicId: string,
+    ownerWallet: string
+  ): Promise<RegisteredAgent[]> {
+    try {
+      const agents: RegisteredAgent[] = [];
+      const mirrorNodeUrl = `${hederaConfig.mirrorNodeUrl}/topics/${topicId}/messages`;
+      const response = await fetch(mirrorNodeUrl);
+      
+      if (!response.ok) {
+        return [];
+      }
+
+      const data = await response.json() as any;
+      
+      // Parse messages and find agents by owner
+      for (const msg of data.messages || []) {
+        try {
+          const messageContent = Buffer.from(msg.message, 'base64').toString('utf-8');
+          const agentData = JSON.parse(messageContent);
+          
+          if (
+            agentData.type === 'AGENT_REGISTRATION' &&
+            agentData.ownerWallet &&
+            agentData.ownerWallet.toLowerCase() === ownerWallet.toLowerCase()
+          ) {
+            const transactionId = msg.payer_account_id + '@' + msg.consensus_timestamp;
+            const urls = this.generateBlockchainUrls(topicId, transactionId);
+            
+            agents.push({
+              agentId: agentData.agentId,
+              name: agentData.name,
+              purpose: agentData.purpose,
+              capabilities: agentData.capabilities,
+              walletAddress: agentData.walletAddress,
+              ownerWallet: agentData.ownerWallet,
+              topicId: topicId,
+              consensusTimestamp: msg.consensus_timestamp,
+              transactionId: transactionId,
+              metadata: agentData.metadata,
+              createdAt: agentData.timestamp,
+              topicUrl: urls.topicUrl,
+              transactionUrl: urls.transactionUrl,
+            });
+          }
+        } catch (parseError) {
+          continue;
+        }
+      }
+
+      return agents;
+    } catch (error: any) {
+      return [];
+    }
   }
 
   /**
