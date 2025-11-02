@@ -1,22 +1,38 @@
-# HederaAgentsHub - Agent-first Digital Economy
+# HederaAgentsHub - Autonomous Agent Economy
 
 **SingHacks 2025 | Hedera Challenge Submission**
 
-A working prototype of an agentic system using ERC-8004 for trustless agent discovery and x402 for secure on-chain payments on Hedera testnet.
+An autonomous agent economy built on the Hedera blockchain, enabling AI agents to discover, negotiate, and transact in a trusted environment.
 
-🚀 Backend: https://hederahub-production.up.railway.app
+🚀 **Backend API:** https://hederahub-production.up.railway.app  
+🌐 **Web3 UI:** Coming soon (currently we going to localhost it for now)
 
 ---
 
-## 🎯 Product Vision
+## 🎯 Project Overview
 
-Build an autonomous agent ecosystem where AI agents can:
-- **Discover** other agents through decentralized registries
-- **Establish trust** via reputation and validation mechanisms  
-- **Execute payments** seamlessly using HTTP-native protocols
-- **Interact autonomously** without human intermediaries
+HederaAgentsHub is an autonomous agent economy built on the Hedera blockchain, enabling AI agents to discover, negotiate, and transact in a trusted environment. Using **ERC-8004** for discovery, **x402** for payments, and **Hedera Consensus Service (HCS)** for audit logging, agents can perform verifiable on-chain commerce.
 
-**Goal:** Demonstrate a self-sustaining digital economy for AI agents on Hedera testnet.
+### 🛍️ Showcase Scenario
+
+In our demonstration, a **BuyerAgent** seeks to purchase an iPhone within 30 days for ≤ 1000 SGD. The agent:
+- Discovers reputable seller agents (**AppleRetailAgent**, **AmazonRetailAgent**)
+- Negotiates prices and terms autonomously
+- Executes secure payments via x402 protocol
+- Records all transactions on Hedera blockchain
+
+This demonstrates how decentralized agents can build trust, execute payments, and record transactions transparently within the Hedera ecosystem.
+
+---
+
+## ✨ Key Features
+
+- **🔍 Agent Discovery** - ERC-8004 protocol for trustless agent registration and discovery
+- **💰 Secure Payments** - x402 HTTP-native payment protocol for gasless micropayments
+- **📝 Audit Logging** - Hedera Consensus Service (HCS) for immutable transaction records
+- **🤝 Trust System** - Reputation and validation mechanisms for agent credibility
+- **🔐 Web3 Authentication** - Wallet-based authentication with HashPack integration
+- **🤖 Autonomous Negotiation** - AI agents negotiate and transact independently
 
 ---
 
@@ -353,18 +369,25 @@ Confidence = (passedValidations / totalValidations) × 100
 
 ```
 HederaAgentsHub/
-├── src/
+├── src/                  # Backend Code
 │   ├── server/           # API Server
-│   │   └── index.ts      # REST endpoints + Swagger UI
+│   │   ├── index.ts      # REST endpoints + Swagger UI
+│   │   └── routes/       # API route handlers
 │   ├── agents/           # Agent Framework
-│   │   ├── BaseAgent.ts  # Base agent class
-│   │   ├── WeatherAgent.ts    # Example agent
-│   │   └── DataAnalyzerAgent.ts  # Example agent
+│   │   ├── BaseAgent.ts        # Base agent class
+│   │   ├── BuyerAgent.ts       # Buyer agent (demo)
+│   │   ├── SellerAgent.ts      # Seller agent (demo)
+│   │   └── DataAnalyzerAgent.ts # Example agent
+│   ├── services/         # Business Logic
+│   │   ├── create-agent.ts     # Agent creation service
+│   │   ├── auth.ts             # Authentication service
+│   │   └── shared-registry.ts  # Shared registry pattern
 │   ├── core/             # Core Modules
 │   │   ├── erc8004/      # ERC-8004 Integration
-│   │   │   ├── identity.ts   # Agent registration
-│   │   │   ├── reputation.ts # Trust scoring
-│   │   │   └── validation.ts # Validations
+│   │   │   ├── hedera-agent-registry.ts  # Agent registry on HCS
+│   │   │   ├── identity.ts               # Agent registration
+│   │   │   ├── reputation.ts             # Trust scoring
+│   │   │   └── validation.ts             # Validations
 │   │   ├── x402/         # Payment Integration
 │   │   │   ├── client.ts     # Payment client
 │   │   │   ├── server.ts     # Payment server
@@ -373,11 +396,42 @@ HederaAgentsHub/
 │   │   ├── config/       # Configuration
 │   │   ├── hedera/       # Hedera SDK utilities
 │   │   └── types/        # TypeScript definitions
+│   ├── middleware/       # Express Middleware
+│   │   └── auth.ts       # JWT authentication
 │   └── demos/            # Demos & Tests
-├── README.md             # This file (PRD)
+│
+├── ui-web3/              # Web3 Blockchain Auth UI
+│   ├── app/              # Next.js App Router
+│   │   ├── page.tsx      # Wallet connection page
+│   │   └── agents/       # Agent management pages
+│   │       └── page.tsx  # Agent listing & creation
+│   ├── config/           # Configuration
+│   │   └── wallets.json  # Demo wallet configurations
+│   ├── lib/              # Utilities
+│   │   └── walletConfig.ts # Wallet management
+│   └── public/           # Static assets
+│
+├── ui/                   # Agentic Flow UI (Coming Soon)
+│   └── [Agent interaction interface]
+│
+├── docs/                 # Documentation
+│   ├── AGENT_BLOCKCHAIN_GUIDE.md
+│   ├── API_DOCUMENTATION.md
+│   ├── X402_PAYMENT_GUIDE.md
+│   └── VIEW_AGENTS_ON_BLOCKCHAIN.md
+│
+├── README.md             # This file
 ├── QUICKSTART.md         # How to run locally
-└── DEPLOYMENT.md         # How to deploy
+├── DEPLOYMENT.md         # How to deploy
+└── package.json          # Dependencies
 ```
+
+### 📂 Folder Descriptions
+
+- **`src/`** - Backend code with Express API server, agent framework, and blockchain integrations
+- **`ui-web3/`** - Web3 authentication UI for wallet connection and agent management (Next.js)
+- **`ui/`** - Agentic flow UI for agent interactions and negotiations (Coming Soon)
+- **`docs/`** - Comprehensive documentation and guides
 
 ---
 
