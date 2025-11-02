@@ -8,7 +8,6 @@ import { AgentDefinition } from '../core/erc8004/hedera-agent-registry';
 import { hederaConfig } from '../core/config/index';
 import { getSharedRegistry } from './shared-registry';
 import { ethers } from 'ethers';
-import { supabaseService } from './supabase';
 
 export interface CreateAgentRequest {
   name: string;
@@ -72,23 +71,6 @@ export async function createAgent(request: CreateAgentRequest): Promise<CreateAg
     console.log(`✅ Agent created successfully!\n`);
     console.log(`   Agent ID: ${registeredAgent.agentId}`);
     console.log(`   Topic ID: ${registeredAgent.topicId}\n`);
-
-    // Store agent data in Supabase
-    try {
-      await supabaseService.storeAgent({
-        agent_id: registeredAgent.agentId,
-        name: registeredAgent.name,
-        purpose: registeredAgent.purpose,
-        capabilities: registeredAgent.capabilities,
-        wallet_address: registeredAgent.walletAddress,
-        evm_address: evmAddress,
-        topic_id: registeredAgent.topicId,
-      });
-      console.log(`   Agent data stored in Supabase\n`);
-    } catch (supabaseError: any) {
-      console.warn(`⚠️  Failed to store agent in Supabase: ${supabaseError.message}`);
-      console.warn(`   Agent was created on Hedera but not stored in database\n`);
-    }
 
     return {
       success: true,
